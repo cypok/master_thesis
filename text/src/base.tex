@@ -5,8 +5,6 @@
 \usepackage[english,russian]{babel}
 \usepackage{indentfirst}
 \usepackage[usenames,dvipsnames]{color}
-\usepackage{algorithm}
-\usepackage{algorithmic}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{mathtools}
@@ -47,15 +45,18 @@
 
 %\setcounter{tocdepth}{2} % глубина оглавления
 
-\floatname{algorithm}{Пример}
-\newcommand{\algorithmictitle}[1]{\hspace{8mm}\textbf{#1}}
-\renewcommand{\algorithmicrequire}{\textbf{Дано:}}
-\renewcommand{\algorithmiccomment}[1]{// #1}
-\newcommand{\NEW}{\textbf{new }}
-\newcommand{\NEWi}[1]{\textbf{new}_{#1}\textbf{ }}
-\newcommand{\NULL}{\textbf{null }}
-\newcommand{\BOOLTRUE}{\textbf{true }}
-\newcommand{\FUNCTION}{\textbf{function }}
+\newcommand{\M}{\ensuremath{\mathbb{M}}}
+
+\newcommand{\NEW}{\textbf{new}}
+\newcommand{\NULL}{\textbf{null}}
+\newcommand{\INITIALMEMORY}{\textbf{initialmemory}}
+\newcommand{\GETFIELD}{\textbf{getfield}}
+\newcommand{\PUTFIELD}{\textbf{putfield}}
+\newcommand{\GETSTATIC}{\textbf{getstatic}}
+\newcommand{\PUTSTATIC}{\textbf{putstatic}}
+\newcommand{\ESCAPE}{\textbf{escape}}
+\newcommand{\SHARED}{\textbf{shared}}
+\newcommand{\RELOAD}{\textbf{reload}}
 
 \newcommand{\Type}[1]{\textrm{Type}(#1)}
 \newcommand{\IsAssignable}[2]{\textrm{IsAssignable}(#1, #2)}
@@ -182,6 +183,58 @@
   \end{center}
 
   \tableofcontents
+
+  \sectionwithoutnumber{Операции языка Java}
+
+    При анализе указателей достаточно рассматривать далеко не все операции.
+    Тогда мы можем построить вспомогательное внутреннее представление только с
+    необходимой и достаточной информацией о потоках данных и зависимостями по
+    памяти.
+
+    Приведем список всех рассматриваемых в рамках анализа указателей операций.
+    Не зависят от памяти две операции. Создание нового объекта типа
+    $\mathrm{T}$:
+    \[ x \leftarrow \NEW(\mathrm{T}), \]
+    и присваивание специального значения null:
+    \[ x \leftarrow \NULL. \]
+
+    Изначальное состояние памяти (\M-переменная) получается специальным
+    образом:
+    \[ \M_0 \leftarrow \INITIALMEMORY. \]
+    Формальный параметр $p$ консервативно берется из разделяемой памяти
+    \[ p \leftarrow \SHARED(\M_0). \]
+
+    Чтение обычного поля $\mathrm{f}$ из переменной $a$ использует
+    \M-переменную:
+    \[ x \leftarrow \GETFIELD(\M_i, a, \mathrm{f}), \]
+    аналогично имеем чтение статического поля $\mathrm{T.f}$:
+    \[ x \leftarrow \GETSTATIC(\M_i, \mathrm{T.f}). \]
+    Запись переменной $x$ в обычное поле $\mathrm{f}$ переменной $a$ порождает
+    \M-переменную:
+    \[ \M_j \leftarrow \PUTFIELD(\M_i, a, \mathrm{f}, x), \]
+    аналогично порождает \M-переменную запись в статическое поле $\mathrm{T.f}$:
+    \[ \M_j \leftarrow \PUTSTATIC(\M_i, \mathrm{T.f}, x). \]
+
+    Чтение и запись $i$-го элемента массива консервативно преобразуется в
+    работу с синтетическим полем $\mathrm{elements}$, которое добавляется всем
+    типам-массивам.
+
+    Вызов функции с параметрами $p_0, \ldots, p_n$ и возвращаемым значением,
+    которое записывается в переменную $x$, консервативно представляется
+    следующим образом:
+    \begin{align*}
+      \M_j &\leftarrow \ESCAPE(\M_i, p_0, \ldots, p_n), \\
+      \M_k &\leftarrow \RELOAD(\M_j), \\
+      x  &\leftarrow \SHARED(\M_k).
+    \end{align*}
+    Заметим, что в случае отсутствия возращаемого значения, последнюю строку
+    необходимо убрать.
+
+    В соответствии с моделью памяти языка \java, необходимо перечитывать
+    значения полей объектов перед чтением \eng{volatile} полей и при входе в
+    блок синхронизации:
+    \[ \M_j \leftarrow \RELOAD(\M_i). \]
+
 
   \newpage
   \bibliography{../../biblio}
