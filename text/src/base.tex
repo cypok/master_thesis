@@ -43,9 +43,22 @@
 \newcommand{\usedate}[3]{({\Russian дата обращения: \formatdate{#1}{#2}{#3}})}
 \bibliographystyle{gost71u2003} % can be found in the root of repo
 
+% widebar
+% from mathabx.sty and mathabx.dcl
+\DeclareFontFamily{U}{mathx}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathx}{m}{n}{
+      <5> <6> <7> <8> <9> <10>
+      <10.95> <12> <14.4> <17.28> <20.74> <24.88>
+      mathx10
+      }{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareFontSubstitution{U}{mathx}{m}{n}
+\DeclareMathAccent{\widebar}{0}{mathx}{"73}
+
 %\setcounter{tocdepth}{2} % глубина оглавления
 
 \newcommand{\M}{\ensuremath{\mathbb{M}}}
+\newcommand{\Mfield}[1]{\textrm{#1}}
 
 \newcommand{\NEW}{\textbf{new}}
 \newcommand{\NULL}{\textbf{null}}
@@ -57,11 +70,13 @@
 \newcommand{\ESCAPE}{\textbf{escape}}
 \newcommand{\SHARED}{\textbf{shared}}
 \newcommand{\RELOAD}{\textbf{reload}}
+\newcommand{\PHI}{\textbf{phi}}
+
+\newcommand{\pts}[1]{\widebar{#1}}
 
 \newcommand{\Type}[1]{\textrm{Type}(#1)}
 \newcommand{\IsAssignable}[2]{\textrm{IsAssignable}(#1, #2)}
 \newcommand{\Pts}[1]{\textrm{Pts}(#1)}
-\newcommand{\VPts}[1]{\bar{#1}}
 \newcommand{\OFPts}[2]{\overline{#1.#2}}
 \newcommand{\Shared}{\overline{shared}}
 \newcommand{\Filter}[2]{\textrm{Filter}_{#1}(#2)}
@@ -70,9 +85,13 @@
 \let\oldphi\phi
 \renewcommand{\phi}{\ensuremath{\oldphi}}
 
+\renewcommand{\emptyset}{\varnothing}
+
 \renewcommand{\leq}{\leqslant}
 \renewcommand{\geq}{\geqslant}
 \newcommand{\incomp}{\not\lessgtr}
+
+\newcommand\Set[2]{\left\{ #1 \mid #2 \right\}}
 
 %\newcommand{\remark}[1]{}
 %\newcommand{\todo}[1]{}
@@ -184,6 +203,162 @@
 
   \tableofcontents
 
+  \sectionwithoutnumber{Внутренее представление}
+
+    Вспомогательное внутреннее представление содержит информацию только о
+    переменных ссылочного типа и информацию о состоянии памяти в виде
+    \M-переменной.
+
+    Ключевыми понятиями анализа являются абстрактные объекты и их множества.
+    Абстрактные объекты будем обозначать буквой $O$; множество целей, на
+    которые может указывать переменная $x$, будем обозначать $\pts{x}$.
+
+    Опишем структуру \M-переменной. Во-первых, она содержит информацию о
+    множестве целей полей объектов:
+    \[ \M.\Mfield{fields}\colon
+      (\textrm{AbstractObject},\ \textrm{InstanceFieldDesc}) \to
+      \textrm{Set}[\textrm{AbstractObject}].
+    \]
+    Аналогично хранится информация о множестве целей статических полей:
+    \[ \M.\Mfield{statics}\colon
+      \textrm{StaticFieldDesc} \to
+      \textrm{Set}[\textrm{AbstractObject}].
+    \]
+    Заметим, что эти отображания можно рассматривать как множества.
+
+    Во-вторых, \M-переменная должна содержать информацию о разделяемых объектах
+    и об объектах, которые утекут \engdef{escape} из метода и станут
+    разделяемыми. Для представления этой информации хранится два множества
+    объектов: объекты (\eng{shared}), которые утекли из метода и уже являются
+    разделяемыми (т.\,е. могут быть прочитаны из статических полей, возвращены
+    из вызванного метода и т.\,д.), и объекты (\eng{escaped}), которые утекли,
+    но которые еще не являеются разделяемыми (т.\,е. не могут быть прочитаны из
+    статических полей и т.\,д.).
+    \[\begin{aligned}
+      &\M.\Mfield{shared}\colon \textrm{Set}[\textrm{AbstractObject}]; \\
+      &\M.\Mfield{escaped}\colon \textrm{Set}[\textrm{AbstractObject}].
+    \end{aligned}\]
+
+    Исходное значение \M-переменной порождается операцией $\INITIALMEMORY$ и
+    содержит пустые множества \Mfield{fields} и \Mfield{statics}, множество
+    \Mfield{escaped} изначально также является пустым. Однако множество
+    \Mfield{shared} содержит один специальный объект $O_{global}$, который
+    олицетворяет все объекты, созданные вне анализируемого метода.
+    \[\M \leftarrow \INITIALMEMORY \Rightarrow \]
+    \[\begin{split}
+      \M = \{ &\Mfield{fields} = \emptyset, \Mfield{statics} = \emptyset, \\
+      &\Mfield{escaped} = \emptyset,
+      \Mfield{shared} = \{O_{global}\}
+    \}.
+    \end{split}\]
+
+    В соответствии с моделью памяти \java есть операции, которые приводят к
+    перечитыванию памяти. При этом все утекшие объекты становятся разделяемыми.
+    И более того, все объекты, которые доступны через поля разделяемых
+    объектов, также становятся разделяемыми.
+    \[ \M' \leftarrow \RELOAD(\M) \Rightarrow \]
+    \[\left\{\begin{aligned}
+      &S_0 = \M.\Mfield{escaped} \cup \M.\Mfield{shared}; \\
+      &S_{i+1} = S_i \cup
+       \Set{O}{\exists f \in \textrm{InstanceFieldDesc}, O_s \in S_i \colon
+       O \in \M.\Mfield{fields}(O_s, f)};
+    \end{aligned}\right.\]
+    \[ S = \text{неподвижная точка последовательности } \{S_i\}; \]
+    \[\begin{split}
+      \M' = \M, \text{кроме } &\M'.\Mfield{escaped} = \emptyset, \\
+         &\M'.\Mfield{shared} = S.
+    \end{split}\]
+
+    Утекание объектов моделируется операцией, которая просто добавляет объекты
+    в множество \Mfield{escaped}:
+    \[ \M' \leftarrow \ESCAPE(\M, a_1, \ldots, a_N) \Rightarrow \]
+    \[\begin{split}
+      \M' = \M, \text{кроме } \M'.\Mfield{escaped} =
+        \M.\Mfield{escaped} \cup \pts{a_1} \cup \ldots \cup \pts{a_N}.
+    \end{split}\]
+
+    Специальное значение null соответствует пустому множеству целей переменной
+    ссылочного типа:
+    \[ x \leftarrow \NULL \Rightarrow
+       \pts{x} = \emptyset. \]
+
+    Создание нового объекта порождает уникальный абстрактный объект:
+    \[ x \leftarrow \NEW(\textrm{T}) \Rightarrow
+       \pts{x} = \{O_i\}. \]
+
+    Чтение разделяемого объекта использует множество разделяемых объектов из
+    \M-переменной:
+    \[ x \leftarrow \SHARED(\M) \Rightarrow
+       \pts{x} = \M.\Mfield{shared}. \]
+
+    Чтение статического поля возвращает множеством всех разделяемых объектов в
+    объединении с объектами, записанными непосредственно в это поле:
+    \[ x \leftarrow \GETSTATIC(\M, \textrm{T.f}) \Rightarrow \]
+    \[
+      \pts{x} = \M.\Mfield{shared} \cup \M.\Mfield{statics}(\textrm{T.f}).
+    \]
+
+    Запись в статическое поле \textrm{T.f} имеет более сложную семантику.
+    По-мимо изменения значения $\Mfield{statics}(\textrm{T.f})$, записываемые
+    объекты утекают, т.\,е. добавляются в множество $\Mfield{escaped}$:
+    \[ \M' \leftarrow \PUTSTATIC(\M, \textrm{T.f}, x) \Rightarrow \]
+    \[\begin{split}
+      \M' = \M, \text{кроме }
+        &\M'.\Mfield{statics}(\textrm{T.f}) = \pts{x}, \\
+        &\M'.\Mfield{escaped} = \M.\Mfield{escaped} \cup \pts{x}.
+    \end{split}\]
+
+    Чтение поля из переменной $a$ возвращает множеством объектов, записанных
+    непосредственно в это поле. Однако, если переменная $a$ может указывать хоть
+    на один раздеяляемый объект, то возвращаемое множество расширяется всеми
+    разделяемыми объектами:
+    \[ x \leftarrow \GETFIELD(\M, a, \textrm{f}) \Rightarrow \]
+    \[
+      \pts{x} = \left( \bigcup_{O \in \pts{a}} \M.\Mfield{fields}(O,
+      \textrm{f}) \right) \cup
+      \begin{cases}
+        \M.\Mfield{shared}, & \text{если } \pts{a} \cap \M.\Mfield{shared} \ne \emptyset;\\
+        \emptyset, & \text{иначе}.
+      \end{cases}
+    \]
+
+    \todo{strong update?}
+    Запись в поле $\textrm{f}$ переменной $a$ модифицирует значение памяти,
+    расширяя множество целей $\Mfield{fields}{O, \textrm{f}}$ для всех $O \in
+    \pts{a}$, и если переменная $a$ может указывать хоть на один раздеяляемый
+    объект, то записываемые объекты также утекают.
+    \[ \M' \leftarrow \PUTFIELD(\M, a, \textrm{f}, x) \Rightarrow \]
+    \[\begin{split}
+      \M' = \M, \text{кроме }
+        &\M'.\Mfield{fields}(O, \textrm{f}) =
+        \pts{x} \cup \M.\Mfield{fields}(O, \textrm{f})
+        \text{ для всех } O \in \pts{a}, \\
+        &\M'.\Mfield{escaped} = \M.\Mfield{escaped} \cup
+        \begin{cases}
+          \pts{x}, & \text{если } \pts{a} \cap \M.\Mfield{shared} \ne \emptyset;\\
+          \emptyset, & \text{иначе}.
+        \end{cases}
+    \end{split}\]
+
+    \todo{в putfield и putstatic в cases: $\cap$ с shared или с shared $\cup$
+    escaped $\cup$ their fields}
+
+    В результате перевода программы в SSA-форму могут появиться \phi-функции от
+    переменных ссылочного типа и от \M-переменных. Оба вида функций обладают
+    довольно простой семантикой:
+    \[ x \leftarrow \PHI(a_1, \ldots, a_N) \Rightarrow
+       \pts{x} = \bigcup_{i = 1}^N \pts{a_i}; \]
+    \[ \M' \leftarrow \PHI(\M_1, \ldots, \M_N) \Rightarrow \]
+    \[\begin{split}
+      \M' = \{
+      &\Mfield{fields}(O, f) = \bigcup_{i = 1}^N \M_i.\Mfield{fields}(O, f), \\
+      &\Mfield{statics}(f) = \bigcup_{i = 1}^N \M_i.\Mfield{statics}(f), \\
+      &\Mfield{escaped} = \bigcup_{i = 1}^N \M_i.\Mfield{escaped}, \\
+      &\Mfield{shared} = \bigcup_{i = 1}^N \M_i.\Mfield{shared}
+      \}
+    \end{split}\]
+
+
   \sectionwithoutnumber{Операции языка Java}
 
     При анализе указателей достаточно рассматривать далеко не все операции.
@@ -191,10 +366,12 @@
     необходимой и достаточной информацией о потоках данных и зависимостями по
     памяти.
 
-    Приведем список всех рассматриваемых в рамках анализа указателей операций.
+    Приведем список всех рассматриваемых в рамках анализа указателей операций и
+    их интерпретацию в вспомогательном внутреннем представлении.
+
     Не зависят от памяти две операции. Создание нового объекта типа
-    $\mathrm{T}$:
-    \[ x \leftarrow \NEW(\mathrm{T}), \]
+    $\textrm{T}$:
+    \[ x \leftarrow \NEW(\textrm{T}), \]
     и присваивание специального значения null:
     \[ x \leftarrow \NULL. \]
 
@@ -204,29 +381,29 @@
     Формальный параметр $p$ консервативно берется из разделяемой памяти
     \[ p \leftarrow \SHARED(\M_0). \]
 
-    Чтение обычного поля $\mathrm{f}$ из переменной $a$ использует
+    Чтение обычного поля $\textrm{f}$ из переменной $a$ использует
     \M-переменную:
-    \[ x \leftarrow \GETFIELD(\M_i, a, \mathrm{f}), \]
-    аналогично имеем чтение статического поля $\mathrm{T.f}$:
-    \[ x \leftarrow \GETSTATIC(\M_i, \mathrm{T.f}). \]
-    Запись переменной $x$ в обычное поле $\mathrm{f}$ переменной $a$ порождает
+    \[ x \leftarrow \GETFIELD(\M_i, a, \textrm{f}), \]
+    аналогично имеем чтение статического поля $\textrm{T.f}$:
+    \[ x \leftarrow \GETSTATIC(\M_i, \textrm{T.f}). \]
+    Запись переменной $x$ в обычное поле $\textrm{f}$ переменной $a$ порождает
     \M-переменную:
-    \[ \M_j \leftarrow \PUTFIELD(\M_i, a, \mathrm{f}, x), \]
-    аналогично порождает \M-переменную запись в статическое поле $\mathrm{T.f}$:
-    \[ \M_j \leftarrow \PUTSTATIC(\M_i, \mathrm{T.f}, x). \]
+    \[ \M_j \leftarrow \PUTFIELD(\M_i, a, \textrm{f}, x), \]
+    аналогично порождает \M-переменную запись в статическое поле $\textrm{T.f}$:
+    \[ \M_j \leftarrow \PUTSTATIC(\M_i, \textrm{T.f}, x). \]
 
     Чтение и запись $i$-го элемента массива консервативно преобразуется в
-    работу с синтетическим полем $\mathrm{elements}$, которое добавляется всем
+    работу с синтетическим полем $\textrm{elements}$, которое добавляется всем
     типам-массивам.
 
     Вызов функции с параметрами $p_0, \ldots, p_n$ и возвращаемым значением,
     которое записывается в переменную $x$, консервативно представляется
     следующим образом:
-    \begin{align*}
-      \M_j &\leftarrow \ESCAPE(\M_i, p_0, \ldots, p_n), \\
-      \M_k &\leftarrow \RELOAD(\M_j), \\
+    \[\begin{aligned}
+      \M_j &\leftarrow \ESCAPE(\M_i, p_0, \ldots, p_n); \\
+      \M_k &\leftarrow \RELOAD(\M_j); \\
       x  &\leftarrow \SHARED(\M_k).
-    \end{align*}
+    \end{aligned}\]
     Заметим, что в случае отсутствия возращаемого значения, последнюю строку
     необходимо убрать.
 
@@ -234,6 +411,8 @@
     значения полей объектов перед чтением \eng{volatile} полей и при входе в
     блок синхронизации:
     \[ \M_j \leftarrow \RELOAD(\M_i). \]
+
+
 
 
   \newpage
