@@ -1,0 +1,4 @@
+#!/bin/sh
+# Post-{commit,checkout,merge} hook for generation git information
+#
+git log -1 HEAD --pretty=format:"%h" > gitinfo.txt
