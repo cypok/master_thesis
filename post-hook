@@ -1,4 +1,10 @@
 #!/bin/sh
 # Post-{commit,checkout,merge} hook for generation git information
 #
-git log -1 HEAD --pretty=format:"%h" > gitinfo.txt
+git log -1 HEAD --date=iso --pretty=format:"
+%% This is file is generated after git commit, checkout or merge.
+%% Do not edit it!
+\newcommand{\GitAbbrHash}{%h}
+\newcommand{\GitDate}{%ad}
+\newcommand{\GitSubject}{%s}
+" > gitinfo.tex

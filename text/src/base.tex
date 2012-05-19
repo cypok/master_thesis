@@ -159,6 +159,8 @@
 
 \newcommand{\java}{\eng{Java}\xspace}
 
+\input{../../gitinfo.tex}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BODY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,7 +179,11 @@
   \begin{center}
     \ifdraft{
       \
-      \vspace{6cm}
+      \vspace{3cm}
+
+      {\large \textsc{Черновик}}
+
+      \vspace{2cm}
 
       Курсовая работа
 
@@ -194,9 +200,15 @@
 
       \vspace{3.5cm}
 
-      Черновик от \today
+      Git-информация
 
-      Git: \input{../../gitinfo.txt}
+      \vspace{0.5cm}
+
+      \begin{tabular}{rp{8cm}}
+        sha1: & \texttt{\GitAbbrHash} \\
+        title:& \GitSubject \\
+        date: & \GitDate
+      \end{tabular}
     }{
       Министерство образования и науки\\
       Российской Федерации
