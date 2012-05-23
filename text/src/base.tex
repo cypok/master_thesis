@@ -1,4 +1,4 @@
-\documentclass[14pt,titlepage,final]{extarticle}
+\documentclass[14pt,titlepage,draft]{extarticle}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PACKAGES
@@ -33,6 +33,10 @@
 \usepackage[obeyDraft, textwidth=2.5cm, textsize=footnotesize,
   backgroundcolor=orange!50, linecolor=black!50]{todonotes}
 
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\floatname{algorithm}{Пример}
+
 \usepackage{cypokcommon}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,22 +57,9 @@
 \newcommand{\field}[1]{\mathrm{#1}}
 \newcommand{\sfield}[2]{\type{#1}.\field{#2}}
 
+\newcommand{\op}[1]{\mathbf{#1}}
+
 \newcommand{\pts}[1]{\widebar{#1}}
-
-\newcommand{\assig}{\leftarrow}
-
-\newcommand{\irOp}[1]{\mathbf{#1}}
-\newcommand{\NEW}{\irOp{new}}
-\newcommand{\NULL}{\irOp{null}}
-\newcommand{\INITIALMEMORY}{\irOp{initialmemory}}
-\newcommand{\GETFIELD}{\irOp{getfield}}
-\newcommand{\PUTFIELD}{\irOp{putfield}}
-\newcommand{\GETSTATIC}{\irOp{getstatic}}
-\newcommand{\PUTSTATIC}{\irOp{putstatic}}
-\newcommand{\ESCAPE}{\irOp{escape}}
-\newcommand{\SHARED}{\irOp{shared}}
-\newcommand{\RELOAD}{\irOp{reload}}
-\newcommand{\PHI}{\irOp{phi}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % TEXT FORMAT
@@ -218,8 +209,8 @@
 
         Примером алгоритма, не учитывающего потоки данных в программе, может
         служить алгоритм анализа синонимов, основанный на типах, применимый
-        для языков со строгой типизацией (подробнее про строгую систему типов в
-        разделе~\ref{section:type_system})
+        для языков со строгой типизацией.
+        \todo{подробнее про строгую систему типов?}
         Простейшая реализация такого алгоритма дает следующий результат:
         независимо от контекста и потоков данных в программе, два выражения
         могут быть синонимами, если они имеют совместимые формальные
@@ -230,51 +221,47 @@
         Большей точностью обладают алгоритмы анализа, которые учитывают потоки
         данных в программе.
         Например, если существует только одно присваивание переменной $v$ вида
-        $v = \NEW T()$, то можно гарантировать, что переменная $v$ может
-        указывать только на объект, созданный этим оператором \eng{new}.
-        С присваиванием вида $v_1 = v_2$ ситуация сложнее. Рассмотрим
+        $v \gets \op{new}(\type{T})$, то можно гарантировать, что переменная $v$
+        может указывать только на объект, созданный этим оператором \eng{new}.
+        С присваиванием вида $v_1 \gets v_2$ ситуация сложнее. Рассмотрим
         пример~\ref{code:data_flow}.
 
-        \label{code:data_flow}
-        \todo{
-          Сравнение алгоритмов \eng{subset-based} и \eng{equality-based} типов
-        }
-        %\begin{algorithm}
-        %  \caption{Сравнение алгоритмов \eng{subset-based} и
-        %                                \eng{equality-based} типов}
-        %  \label{code:data_flow}
-        %  \begin{algorithmic}[1]
-        %    \STATE $b$ = \NEW T()
-        %    \STATE $c$ = \NEW T()
-        %    \STATE $a$ = $b$
-        %    \STATE $a$ = $c$
-        %  \end{algorithmic}
-        %\end{algorithm}
+        \begin{algorithm}
+          \caption{Сравнение алгоритмов \eng{subset-based} и
+                                        \eng{equality-based} типов}
+          \label{code:data_flow}
+          \begin{algorithmic}[1]
+            \State $b \gets \op{new}(\type{T})$
+            \State $c \gets \op{new}(\type{T})$
+            \State $a \gets b$
+            \State $a \gets c$
+          \end{algorithmic}
+        \end{algorithm}
 
         Цели указателя, то есть множество объектов, на которые может указывать
         переменная $p$ (или любое другое выражение ссылочного типа), для
-        удобства обозначим как $Pts(p)$ \engdef{points-to set}.
+        удобства обозначим как $\pts{p}$.
         Учитывая строки 1 и 2, для переменных $b$ и $c$ мы можем точно
         определить множество объектов, на которые они указывают:
-        \[Pts(b) = \{O_1\}, Pts(c) = \{O_2\},\]
+        \[\pts{b} = \{O_1\},\ \pts{c} = \{O_2\},\]
         где $O_1$ и $O_2$~--- уникальные объекты в куче, соответствующие
         операторам \eng{new} в строках 1 и 2.  То есть мы учли поток данных от
         оператора \eng{new}, создавшего новый объект, в переменную.
 
-        Интерпретировать присваивание $a = b$ можно двумя способами,
+        Интерпретировать присваивание $a \gets b$ можно двумя способами,
         и алгоритмы анализа разбиваются на два типа по этому признаку:
         \begin{itemize}
           \item алгоритмы первого типа накладывают ограничение
-                $Pts(a) \supset Pts(b)$
+                $\pts{a} \supset \pts{b}$
                 (\eng{subset-based} алгоритмы)~\cite{andersen}
           \item алгоритмы второго типа накладывают ограничение
-                $Pts(a) = Pts(b)$
+                $\pts{a} = \pts{b}$
                 (\eng{equality-based} алгоритмы)~\cite{steensgaard}
         \end{itemize}
         В нашем примере \eng{subset-based} алгоритм получит, что
-        \[Pts(a) = \{O_1, O_2\}, Pts(b) = \{O_1\}, Pts(c) = \{O_2\},\]
+        \[\pts{a} = \{O_1, O_2\},\ \pts{b} = \{O_1\},\ \pts{c} = \{O_2\},\]
         а \eng{equality-based}
-        \[Pts(a) = Pts(b) = Pts(c) = \{O_1, O_2\}.\]
+        \[\pts{a} = \pts{b} = \pts{c} = \{O_1, O_2\}.\]
         Первый тип алгоритмов более точен, хотя его время работы в худшем
         случае кубически зависит от размера анализируемой программы.
         Второй тип алгоритмов работает за практически линейное время\footnote{
@@ -297,43 +284,40 @@
         учитывать поток управления в программе.
         Рассмотрим пример~\ref{code:control_flow}.
 
-        \label{code:control_flow}
-        \todo{Сравнение чувствительного и нечувствительного к потоку
-          управления алгоритмов}
-        %\begin{algorithm}
-        %  \caption{Сравнение чувствительного и нечувствительного к потоку
-        %           управления алгоритмов}
-        %  \label{code:control_flow}
-        %  \begin{algorithmic}[1]
-        %    \STATE $a$ = \NEW T()
-        %    \STATE $b$ = \NEW T()
-        %    \STATE $c$ = \NEW T()
-        %    \STATE $a$ = $b$
-        %    \STATE $b$ = $c$
-        %    \STATE $c$ = $a$
-        %  \end{algorithmic}
-        %\end{algorithm}
+        \begin{algorithm}
+          \caption{Сравнение чувствительного и нечувствительного к потоку
+                   управления алгоритмов}
+          \label{code:control_flow}
+          \begin{algorithmic}[1]
+            \State $a \gets \op{new}(\type{T})$
+            \State $b \gets \op{new}(\type{T})$
+            \State $c \gets \op{new}(\type{T})$ \label{code:control_flow:before_gets}
+            \State $a \gets b$ \label{code:control_flow:after_gets}
+            \State $b \gets c$
+            \State $c \gets a$ \label{code:control_flow:end}
+          \end{algorithmic}
+        \end{algorithm}
 
         Нечувствительный к потоку управления алгоритм анализа воспринимает
         программу как неупорядоченный набор операций.
         Для указанного примера такой алгоритм получит следующее
-        \[Pts(a) = Pts(b) = Pts(c) = \{O_a, O_b, O_c\}.\]
+        \[\pts{a} = \pts{b} = \pts{c} = \{O_a, O_b, O_c\}.\]
         Этот результат не является особо точным, но зато он верен
         для любой точки программы.
 
         Чувствительный к потоку управления алгоритм получит следующие данные
-        после 3-ей строки
-        \[\textrm{строка 3}:
-            Pts(a) = \{O_a\}, Pts(b) = \{O_b\}, Pts(c) = \{O_c\}.\]
-        Далее, при анализе 4-ой строки, присваивание будет интерпретировано
-        как строгое присваивание (подробнее в
-        разделе~\ref{section:flow_sensetive_analysis}), и алгоритм получит
-        результат, что $Pts(a) = \{O_b\}$. То есть присваивание нового значения
-        в переменную уничтожило информацию о том, что $a$ может указывать на
-        $O_a$. Продолжая подобные рассуждения до последней строки, получаются
-        следующие результаты:
-        \[\textrm{строка 6}:
-            Pts(a) = \{O_b\}, Pts(b) = \{O_c\}, Pts(c) = \{O_b\}.\]
+        после строки \ref{code:control_flow:before_gets}:
+        \[\pts{a} = \{O_a\},\ \pts{b} = \{O_b\},\ \pts{c} = \{O_c\}.\]
+        Далее, при анализе строки \ref{code:control_flow:after_gets},
+        присваивание будет интерпретировано как строгое присваивание,
+        \todo{Вставить ссылку на место, где подробно написано про strong
+        update}
+        то есть присваивание нового значения в переменную уничтожит
+        информацию о том, что $a$ может указывать на $O_a$, и в итоге
+        получится, что $\pts{a} = \{O_b\}$. Продолжая подобные рассуждения,
+        алгоритм получит следующие результаты после строки
+        \ref{code:control_flow:end}:
+        \[\pts{a} = \{O_b\},\ \pts{b} = \{O_c\},\ \pts{c} = \{O_b\}.\]
         Хотя такой алгоритм дает более точный результат, приходится хранить
         информацию о целях каждого указателя для каждой точки программы
         отдельно, что значительно увеличивает суммарный объем памяти,
@@ -346,23 +330,21 @@
         которые могут быть вызваны из анализируемой.
         Рассмотрим пример~\ref{code:interprocedural}.
 
-        \label{code:interprocedural}
-        \todo{Демонстрация работы межпроцедурного алгоритма}
-        %\begin{algorithm}
-        %  \caption{Демонстрация работы межпроцедурного алгоритма}
-        %  \label{code:interprocedural}
-        %  \begin{algorithmic}[1]
-        %    \STATE \FUNCTION foo($x$, $y$) \{
-        %    \RETURN $x$
-        %    \STATE \}
-        %    \STATE
-        %    \STATE $b$ = \NEW T()
-        %    \STATE $c$ = \NEW T()
-        %    \STATE $a$ = foo($b$, $c$)
-        %  \end{algorithmic}
-        %\end{algorithm}
+        \begin{algorithm}
+          \caption{Демонстрация работы межпроцедурного алгоритма}
+          \label{code:interprocedural}
+          \begin{algorithmic}[1]
+            \Function{Some}{$x$, $y$}
+              \State \Return $x$
+            \EndFunction
+            \Statex
+            \State $b \gets \op{new}(\type{T})$
+            \State $c \gets \op{new}(\type{T})$
+            \State $a \gets$ \Call{Some}{$b$, $c$}
+          \end{algorithmic}
+        \end{algorithm}
 
-        Наша задача понять, чему равно $Pts(a)$.
+        Наша задача понять, чему равно $\pts{a}$.
         Алгоритмы анализа можно разделить на две категории, в зависимости от
         того, как они обрабатывают вызовы функций:
         \begin{itemize}
@@ -377,13 +359,13 @@
         а второй потребляет меньше памяти и работает
         быстрее~\cite[с.~117]{andersen}.
         В нашем примере межпроцедурный алгоритм анализа, проанализировав
-        функцию \eng{foo}, запоминает, что для нее выполнено следующее условие
+        функцию \eng{Some}, запоминает, что для нее выполнено следующее условие
         на возвращаемое значение
-        \[Pts(retval) = Pts(x),\]
-        и тогда может сделать вывод, что \[Pts(a) = Pts(b) = \{O_1\}.\]
+        \[\pts{retval} = \pts{x},\]
+        и тогда может сделать вывод, что \[\pts{a} = \pts{b} = \{O_1\}.\]
         В такой же ситуации внутрипроцедурный алгоритм анализа обязан сделать
         консервативное предположение
-        \[Pts(a) = Pts(b) \cup Pts(c) = \{O_1, O_2\}.\]
+        \[\pts{a} = \pts{b} \cup \pts{c} = \{O_1, O_2\}.\]
 
   \section{Внутренее представление}
 
@@ -430,11 +412,11 @@
     \[ \M.\Mfield{escaped} \in \powerset{AbstractObjects}. \]
 
     Исходное значение \Mhyp переменной порождается с помощью операции
-    $\INITIALMEMORY$ и содержит пустые множества \Mfield{fields} и
+    $\op{initialmemory}$ и содержит пустые множества \Mfield{fields} и
     \Mfield{statics}, множество \Mfield{escaped} изначально также является
     пустым. Однако множество \Mfield{shared} содержит специальный объект
     $O_{global}$.
-    \[\M \assig \INITIALMEMORY \Rightarrow \]
+    \[\M \gets \op{initialmemory }\Rightarrow \]
     \[\begin{split}
       \M = \{ &\Mfield{fields} = \emptyset, \Mfield{statics} = \emptyset, \\
       &\Mfield{escaped} = \emptyset,
@@ -446,7 +428,7 @@
     в множество \Mfield{escaped}, причем при добавлении в множество
     \Mfield{escaped} какого-либо объекта, добавляются в множество еще и все
     объекты, доступные через поля этого объекта.
-    \[ \M' \assig \ESCAPE(\M, a_1, \ldots, a_N) \Rightarrow \]
+    \[ \M' \gets \op{escape}(\M, a_1, \ldots, a_N) \Rightarrow \]
     \[\begin{split}
       \M' = \M, \text{кроме } \M'.\Mfield{escaped} =
         \M.\Mfield{escaped} \cup
@@ -468,7 +450,7 @@
     В соответствии с моделью памяти \java есть операции, которые приводят к
     перечитыванию памяти \todocite. При этом все утекшие объекты становятся
     разделяемыми.
-    \[ \M' \assig \RELOAD(\M) \Rightarrow \]
+    \[ \M' \gets \op{reload}(\M) \Rightarrow \]
     \[\begin{split}
       \M' = \M, \text{кроме }
         &\M'.\Mfield{shared} = \M.\Mfield{shared} \cup \M.\Mfield{escaped}, \\
@@ -477,21 +459,21 @@
 
     Специальное значение null соответствует пустому множеству целей переменной
     ссылочного типа:
-    \[ x \assig \NULL \Rightarrow
+    \[ x \gets \op{null }\Rightarrow
        \pts{x} = \emptyset. \]
 
     Создание нового объекта порождает уникальный абстрактный объект:
-    \[ x \assig \NEW(\type{T}) \Rightarrow
+    \[ x \gets \op{new}(\type{T}) \Rightarrow
        \pts{x} = \{O_i\}. \]
 
     Чтение разделяемого объекта использует множество разделяемых объектов из
     \Mhyp переменной:
-    \[ x \assig \SHARED(\M) \Rightarrow
+    \[ x \gets \op{shared}(\M) \Rightarrow
        \pts{x} = \M.\Mfield{shared}. \]
 
     Чтение статического поля возвращает множество всех разделяемых объектов в
     объединении с объектами, записанными непосредственно в это поле:
-    \[ x \assig \GETSTATIC(\M, \sfield{T}{f}) \Rightarrow \]
+    \[ x \gets \op{getstatic}(\M, \sfield{T}{f}) \Rightarrow \]
     \[
       \pts{x} = \M.\Mfield{shared} \cup \M.\Mfield{statics}(\sfield{T}{f}).
     \]
@@ -500,7 +482,7 @@
     По-мимо изменения значения $\Mfield{statics}(\sfield{T}{f})$, записываемые
     объекты утекают, то есть добавляются в множество
     $\Mfield{escaped}$:
-    \[ \M' \assig \PUTSTATIC(\M, \sfield{T}{f}, x) \Rightarrow \]
+    \[ \M' \gets \op{putstatic}(\M, \sfield{T}{f}, x) \Rightarrow \]
     \[\begin{split}
       \M' = \M, \text{кроме }
         &\M'.\Mfield{statics}(\sfield{T}{f}) = \pts{x}, \\
@@ -516,7 +498,7 @@
     непосредственно в это поле. Однако, если переменная $a$ может указывать хоть
     на один раздеяляемый объект, то возвращаемое множество расширяется всеми
     разделяемыми объектами:
-    \[ x \assig \GETFIELD(\M, a, \field{f}) \Rightarrow \]
+    \[ x \gets \op{getfield}(\M, a, \field{f}) \Rightarrow \]
     \[
       \pts{x} = \left( \bigcup_{O \in \pts{a}} \M.\Mfield{fields}(O,
       \field{f}) \right) \cup
@@ -537,7 +519,7 @@
     $\pts{a} = \{O_i\}$, то есть содержит только один абстрактный объект,
     отличный от $O_{global}$, то мы можем установить множество
     $\Mfield{fields}(O_i, \field{f})$ равным $\pts{x}$.
-    \[ \M' \assig \PUTFIELD(\M, a, \field{f}, x) \Rightarrow \]
+    \[ \M' \gets \op{putfield}(\M, a, \field{f}, x) \Rightarrow \]
     \[\begin{split}
       \M' = \M,\ &\text{кроме} \\
         &\begin{split}
@@ -565,9 +547,9 @@
     В результате перевода программы в SSA-форму могут появиться \phihyp функции
     от переменных ссылочного типа и от \Mhyp переменных. Оба вида функций
     обладают довольно простой семантикой:
-    \[ x \assig \PHI(a_1, \ldots, a_N) \Rightarrow
+    \[ x \gets \op{phi}(a_1, \ldots, a_N) \Rightarrow
        \pts{x} = \bigcup_{i = 1}^N \pts{a_i}; \]
-    \[ \M' \assig \PHI(\M_1, \ldots, \M_N) \Rightarrow \]
+    \[ \M' \gets \op{phi}(\M_1, \ldots, \M_N) \Rightarrow \]
     \[\begin{split}
       \M' = \{
       &\Mfield{fields}(O, f) = \bigcup_{i = 1}^N \M_i.\Mfield{fields}(O, f), \\
@@ -589,27 +571,27 @@
     их интерпретацию в вспомогательном внутреннем представлении.
 
     Не зависят от памяти две операции. Создание нового объекта типа $\type{T}$:
-    \[ x \assig \NEW(\type{T}), \]
+    \[ x \gets \op{new}(\type{T}), \]
     и присваивание специального значения null:
-    \[ x \assig \NULL. \]
+    \[ x \gets \op{null}. \]
 
     Изначальное состояние памяти (\Mhyp переменная) получается специальным
     образом:
-    \[ \M_0 \assig \INITIALMEMORY. \]
+    \[ \M_0 \gets \op{initialmemory}. \]
     Формальный параметр $p$ консервативно берется из разделяемой памяти
-    \[ p \assig \SHARED(\M_0). \]
+    \[ p \gets \op{shared}(\M_0). \]
 
     Чтение обычного поля $\field{f}$ из переменной $a$ использует
     \Mhyp переменную:
-    \[ x \assig \GETFIELD(\M_i, a, \field{f}), \]
+    \[ x \gets \op{getfield}(\M_i, a, \field{f}), \]
     аналогично имеем чтение статического поля $\sfield{T}{f}$:
-    \[ x \assig \GETSTATIC(\M_i, \sfield{T}{f}). \]
+    \[ x \gets \op{getstatic}(\M_i, \sfield{T}{f}). \]
     Запись переменной $x$ в обычное поле $\field{f}$ переменной $a$ порождает
     \Mhyp переменную:
-    \[ \M_j \assig \PUTFIELD(\M_i, a, \field{f}, x), \]
+    \[ \M_j \gets \op{putfield}(\M_i, a, \field{f}, x), \]
     аналогично порождает \Mhyp переменную запись в статическое поле
     $\sfield{T}{f}$:
-    \[ \M_j \assig \PUTSTATIC(\M_i, \sfield{T}{f}, x). \]
+    \[ \M_j \gets \op{putstatic}(\M_i, \sfield{T}{f}, x). \]
 
     Чтение и запись $i$-го элемента массива консервативно преобразуется в
     работу с синтетическим полем $\field{elements}$, которое добавляется всем
@@ -619,9 +601,9 @@
     которое записывается в переменную $x$, консервативно представляется
     следующим образом:
     \[\begin{aligned}
-      \M_j &\assig \ESCAPE(\M_i, p_0, \ldots, p_n); \\
-      \M_k &\assig \RELOAD(\M_j); \\
-      x  &\assig \SHARED(\M_k).
+      \M_j &\gets \op{escape}(\M_i, p_0, \ldots, p_n); \\
+      \M_k &\gets \op{reload}(\M_j); \\
+      x  &\gets \op{shared}(\M_k).
     \end{aligned}\]
     Заметим, что в случае отсутствия возращаемого значения, последнюю строку
     необходимо убрать.
@@ -629,7 +611,7 @@
     В соответствии с моделью памяти языка \java, необходимо перечитывать
     значения полей объектов перед чтением \eng{volatile} полей и при входе в
     блок синхронизации:
-    \[ \M_j \assig \RELOAD(\M_i). \]
+    \[ \M_j \gets \op{reload}(\M_i). \]
 
     \todo{Привести пример как простенькая программа выглядит в такой
     терминологии}
