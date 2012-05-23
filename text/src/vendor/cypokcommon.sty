@@ -1,0 +1,77 @@
+% Description:
+%   Some basic commands that are used in my latex documents.
+%
+% Author: Vladimir Parfinenko
+
+
+% bibliography style:
+\usepackage{datetime} % used by bibliography
+\newcommand{\usedate}[3]{({\Russian дата обращения: \formatdate{#1}{#2}{#3}})}
+\bibliographystyle{gost71u2003} % can be found in the root of repo
+
+%\setcounter{tocdepth}{2} % глубина оглавления
+
+\usepackage[english,russian]{babel}
+\addto\captionsrussian{
+  \let\oldrefname\refname
+  \renewcommand\refname{\addcontentsline{toc}{section}{\oldrefname}\oldrefname}
+}
+
+% русские нумераторы
+\renewcommand{\theenumii}{(\asbuk{enumii})}
+\renewcommand{\labelenumii}{\asbuk{enumii})}
+\usepackage{subfig}
+\renewcommand{\thesubfigure}{\asbuk{subfigure}}
+
+
+% обёртка с моими настройками поверх figure:
+% \begin{myfigure}{подпись}{label} ... \end{myfigure}
+\newenvironment{myfigure}[2]%
+  {\pushQED{\caption{#1} \label{#2}} % push caption & label
+   \begin{figure}[!htb]\centering } %
+  {  \popQED % pop caption & label
+   \end{figure}}
+
+\let\oldsection\section
+\renewcommand{\section}{\newpage\oldsection}
+
+\newcommand{\sectionwithoutnumber}[1]{
+  \section*{#1}
+  \addcontentsline{toc}{section}{#1}
+}
+
+\usepackage{todonotes}
+\newcommand{\todocite}[1]{%
+  \todo[backgroundcolor=blue!20]{citation?}} 
+
+% numbers formating: \num{123456}
+\usepackage{numprint}
+\newcommand{\num}[1]{\numprint{#1}}
+  \npthousandsep{\,}
+  \npthousandthpartsep{}
+  \npdecimalsign{,}
+
+\newcommand{\eng}[1]{{\English#1}}
+\newcommand{\engdef}[1]{(англ.~\eng{#1})}
+
+\renewcommand{\emptyset}{\varnothing}
+\newcommand{\powerset}[1]{\mathcal{P}(#1)}
+
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+
+% \widebar{foo}
+% from mathabx.sty and mathabx.dcl
+\DeclareFontFamily{U}{mathx}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathx}{m}{n}{
+      <5> <6> <7> <8> <9> <10>
+      <10.95> <12> <14.4> <17.28> <20.74> <24.88>
+      mathx10
+      }{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareFontSubstitution{U}{mathx}{m}{n}
+\DeclareMathAccent{\widebar}{0}{mathx}{"73}
+
+% { #1 | #2 } - set of #1 such that #2
+\newcommand\Set[2]{\left\{ #1 \mid #2 \right\}}
+
