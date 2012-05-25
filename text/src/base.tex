@@ -23,6 +23,7 @@
 
 \usepackage{xspace} % for \xspace
 \usepackage{hyphenat} % for \hyp
+\usepackage{pbox}
 
 \usepackage{footmisc}
 \renewcommand{\footnotelayout}{\small}
@@ -99,7 +100,7 @@
       \
       \vspace{3cm}
 
-      {\large \textsc{Черновик}}
+      {\Large \scshape Черновик}
 
       \vspace{2cm}
 
@@ -107,26 +108,27 @@
 
       \vspace{0.2cm}
 
-      Парфиненко Владимир Владимирович
+      {\large Парфиненко Владимир Владимирович}
 
       \vspace{1.5cm}
 
-      \textbf{
-        ПРИМЕНЕНИЕ АНАЛИЗА УКАЗАТЕЛЕЙ И СИНОНИМОВ\\
-        ДЛЯ ОПТИМИЗАЦИИ МНОГОПОТОЧНЫХ ПРОГРАММ
+      {\large \scshape \bfseries
+        Применение анализа указателей и синонимов\\
+        для оптимизации многопоточных программ
       }
 
-      \vspace{3.5cm}
+      \vfill
 
-      Git-информация
+      Git info
 
-      \vspace{0.5cm}
-
-      \begin{tabular}{rp{8cm}}
-        sha1: & \texttt{\GitAbbrHash} \\
-        title:& \GitSubject \\
-        date: & \GitDate
-      \end{tabular}
+      \begin{table}[!htb]
+        \centering
+        \begin{tabular}{rp{0.5\textwidth}}
+          sha1: & \texttt{\GitAbbrHash} \\
+          title:& \GitSubject \\
+          date: & \GitDate
+        \end{tabular}
+      \end{table}
     }{
       Министерство образования и науки\\
       Российской Федерации
@@ -150,29 +152,27 @@
 
       Курсовая работа
 
-      \vspace{0.2cm}
+      \vspace{0.5cm}
 
-      ПАРФИНЕНКО Владимир Владимирович
+      {\large Парфиненко Владимир Владимирович}
 
-      \vspace{1.5cm}
+      \vspace{1.1cm}
 
-      \textbf{
-        ПРИМЕНЕНИЕ АНАЛИЗА УКАЗАТЕЛЕЙ И СИНОНИМОВ\\
-        ДЛЯ ОПТИМИЗАЦИИ МНОГОПОТОЧНЫХ ПРОГРАММ
+      {\large \scshape \bfseries
+        Применение анализа указателей и синонимов\\
+        для оптимизации многопоточных программ
       }
 
       \vspace{2.5cm}
 
-      \begin{flushright}
 
-        Научные руководители
-
+      \hfill\pbox{\textwidth}{
+        Научные руководители:\\
         м.\,н.\,с.~ИСИ~СО~РАН, Павлов\,П.\,Е.\\
         зав.\,лаб.~ИСИ~СО~РАН, к.\,т.\,н.~Шелехов\,В.\,И.
+      }
 
-      \end{flushright}
-
-      \vspace {4cm}
+      \vfill
 
       Новосибирск 2012
     }
