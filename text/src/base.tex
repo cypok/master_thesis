@@ -30,7 +30,7 @@
 \usepackage{etoolbox}
 \apptocmd{\sloppy}{\hbadness 10000\relax}{}{}
 
-\usepackage[obeyDraft, textwidth=2.5cm, textsize=footnotesize,
+\usepackage[obeyDraft, textwidth=3cm, textsize=footnotesize,
   backgroundcolor=orange!50, linecolor=black!50]{todonotes}
 
 \usepackage{algorithm}
@@ -68,11 +68,17 @@
 % TEXT FORMAT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\geometry{top=2cm,bottom=2cm,bindingoffset=0cm}
+\geometry{a4paper,top=2cm,bottom=2cm,bindingoffset=0cm}
 \ifdraft{
-  \geometry{left=1cm,right=4cm}
+  % <leftmargin> | <marginpar> | <sep> | <text> | <rightmargin>
+  %    0.5cm     |     3cm     | 0.5cm |  16cm  |     1cm
+  \geometry{reversemp=true,includemp=true,
+            marginparwidth=3cm,marginparsep=0.5cm,
+            left=0.5cm,textwidth=16cm}
 }{
-  \geometry{left=3cm,right=2cm}
+  % <leftmargin> | <text> | <rightmargin>
+  %     3cm      |  16cm  |     2cm
+  \geometry{left=3cm,textwidth=16cm}
 }
 \linespread{1.3}
 
