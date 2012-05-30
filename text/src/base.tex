@@ -27,6 +27,7 @@
 \usepackage{footmisc}
 \renewcommand{\footnotelayout}{\small}
 
+% prevent underfull boxes in bibliography
 \usepackage{etoolbox}
 \apptocmd{\sloppy}{\hbadness 10000\relax}{}{}
 
@@ -40,13 +41,13 @@
 
 \usepackage{multicol}
 
-\usepackage{cypokcommon}
+\usepackage{../../common/cypokcommon}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DOCUMENT-SPECIFIC COMMANDS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\input{../../gitinfo.tex}
+\input{../../common/gitinfo}
 
 \newcommand{\java}{\eng{Java}\xspace}
 
@@ -1219,7 +1220,8 @@
 
 
   \newpage
-  \bibliography{../../biblio}
+  \bibliographystyle{../../common/gost71u2003}
+  \bibliography{../../common/biblio}
 
 \end{document}
 

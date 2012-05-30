@@ -6,7 +6,7 @@ git log -1 HEAD --date=iso --pretty=format:"
 %% Do not edit it!
 \newcommand{\GitAbbrHash}{%h}
 \newcommand{\GitDate}{%ad}
-" > gitinfo.tex
+" > common/gitinfo.tex
 
 git log -1 HEAD --date=iso --pretty=format:"%s" |
   sed 's/\\/\\textbackslashXXX/g' |
@@ -14,5 +14,5 @@ git log -1 HEAD --date=iso --pretty=format:"%s" |
   sed 's/\^/\\textasciicircumXXX/g' |
   sed 's/\([&$#_%{}]\)/\\\1/g' |
   sed 's/\(textbackslash\|textasciitilde\|textasciicircum\)XXX/\1{}/g' |
-  sed 's/\(.*\)/\\newcommand{\\GitSubject}{\1}/g' >> gitinfo.tex
+  sed 's/\(.*\)/\\newcommand{\\GitSubject}{\1}/g' >> common/gitinfo.tex
 

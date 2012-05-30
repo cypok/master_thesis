@@ -7,7 +7,6 @@
 % bibliography style:
 \usepackage{datetime} % used by bibliography
 \newcommand{\usedate}[3]{({\Russian дата обращения: \formatdate{#1}{#2}{#3}})}
-\bibliographystyle{gost71u2003} % can be found in the root of repo
 
 %\setcounter{tocdepth}{2} % contents depth
 
@@ -19,7 +18,12 @@
 
 % russian enumerators
 \renewcommand{\theenumii}{(\asbuk{enumii})}
-\renewcommand{\labelenumii}{\asbuk{enumii})}
+\ifdefined\labelenumii
+  \renewcommand{\labelenumii}{(\asbuk{enumii})}
+\fi
+\ifdefined\setbeamertemplate
+  \setbeamertemplate{enumerate subitem}{(\asbuk{enumii})}
+\fi
 \usepackage{subfig}
 \renewcommand{\thesubfigure}{\asbuk{subfigure}}
 
@@ -71,7 +75,4 @@
 \DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
 \DeclareFontSubstitution{U}{mathx}{m}{n}
 \DeclareMathAccent{\widebar}{0}{mathx}{"73}
-
-% { #1 | #2 } - set of #1 such that #2
-\newcommand\Set[2]{\left\{ #1 \mid #2 \right\}}
 
