@@ -1,0 +1,80 @@
+\documentclass[usenames,dvipsnames,pdftex,unicode,hidelinks]{beamer}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PACKAGES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{indentfirst}
+
+\usepackage{ifdraft}
+
+\usepackage{../../common/cypokcommon}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DOCUMENT-SPECIFIC COMMANDS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{../../common/gitinfo}
+
+% add frame number to footline
+\newcommand*\oldmacro{}
+\let\oldmacro\insertshorttitle
+\renewcommand*\insertshorttitle{
+  \oldmacro\hfill
+  \insertframenumber\,/\,\inserttotalframenumber
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SLIDES FORMAT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usetheme{Warsaw}
+\usecolortheme{seahorse}
+
+\setbeamercovered{transparent}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BODY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title[Анализ указателей и синонимов]{
+  Применение анализа указателей и синонимов
+  для оптимизации многопоточных программ
+}
+\author[Парфиненко Владимир Владимирович]{
+  Парфиненко Владимир Владимирович
+  \texorpdfstring{%
+    \\
+    \vspace{0.5cm}
+    \small 
+      Научные руководители:\\
+      м.\,н.\,с.~ИСИ~СО~РАН, Павлов~Павел~Евгеньевич \\
+      зав.\,лаб.~ИСИ~СО~РАН, к.\,т.\,н.~Шелехов~Владимир~Иванович
+  }{}% short title in pdf
+}
+\institute{
+  Новосибирский Национальный Исследовательский \\
+  Государственный Университет
+}
+\date{
+  Новосибирск, 2012\ifdraft{ \\\medskip \footnotesize Git date: \GitDate.}{}
+}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}
+
+  \centering\huge
+
+  Спасибо за внимание!
+
+\end{frame}
+
+\end{document}
