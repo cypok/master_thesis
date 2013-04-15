@@ -17,6 +17,8 @@
 \usepackage{algpseudocode}
 \newcommand{\algorithmictitle}[1]{\hspace{8mm}\textbf{#1}}
 
+\usepackage{cancel}
+
 \usepackage{../../common/cypokcommon}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,6 +44,7 @@
 \newcommand{\sfield}[2]{\type{#1}.\field{#2}}
 
 \newcommand{\op}[1]{\mathbf{#1}}
+\newcommand{\pts}[1]{\widebar{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SLIDES FORMAT
@@ -72,11 +75,10 @@
   }{}% short title in pdf
 }
 \institute{
-  Новосибирский Национальный Исследовательский \\
-  Государственный Университет
+  Новосибирский Государственный Университет
 }
 \date{
-  Новосибирск, 2012\ifdraft{ \\\medskip \footnotesize Git date: \GitDate.}{}
+  Новосибирск, 2013\ifdraft{ \\\medskip \footnotesize Git date: \GitDate.}{}
 }
 
 \begin{document}
@@ -213,6 +215,50 @@
 
 \end{frame}
 
+\begin{frame}{Абстрактные объекты}
+
+  \begin{block}{Разные источники объектов}
+    \begin{algorithmic}[1]
+      \State $x \gets \op{new}(\type{T})$
+        \Comment $\pts{x} \gets \{O_1\}$
+      \State $y \gets \op{new}(\type{T})$
+        \Comment $\pts{y} \gets \{O_2\}$
+      \State $u \gets \op{getstatic}(\M_0, \sfield{T}{f})$
+        \Comment $\pts{u} \gets \{O_{global}\}$
+      \State $v \gets \op{getstatic}(\M_0, \sfield{T}{g})$
+        \Comment $\pts{v} \gets \{O_{global}\}$
+    \end{algorithmic}
+  \end{block}
+
+\end{frame}
+
+\begin{frame}{Граф операций}
+
+  \begin{columns}[t]
+    \begin{column}[T]{0.67\textwidth}
+      \includegraphics[width=\textwidth]{refmem_graph}
+    \end{column}
+    \begin{column}[T]{0.33\textwidth}
+      \begin{block}{\java программа}
+        \begin{algorithmic}[1]
+          \State $a \gets \op{new}(\type{A})$
+          \If{\ldots}
+            \State $a.\field{f} \gets \op{new}(\type{A})$
+          \Else
+            \State $a.\field{f} \gets \op{arg}(1)$
+          \EndIf
+          \State $\op{return}(a.\field{f})$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
+
+  \medskip
+  \centerline{\small Красные стрелки~--- зависимость по значению.}
+  \centerline{\small Синие стрелки~--- зависимость по памяти.}
+
+\end{frame}
+
 \begin{frame}{Алгоритм анализа}
 
   \textbf{Алгоритм анализа:}
@@ -228,6 +274,76 @@
 
 \end{frame}
 
+\begin{frame}{Модель памяти языка Java}
+  \begin{columns}[t]
+    \begin{column}{.5\textwidth}
+      \begin{block}{Чтение из \eng{volatile} поля}
+        \begin{algorithmic}
+          \State $a.\field{x} \gets 42$
+          \State $\ldots$
+          \State $t \gets b.\field{volatileField}$
+          \State $\ldots$
+          \State $x \gets a.\field{x}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+    \begin{column}{.5\textwidth}
+      \begin{block}{Чтение из обычного поля}
+        \begin{algorithmic}
+          \State $a.\field{x} \gets 42$
+          \State $\ldots$
+          \State $t \gets b.\field{normalField}$
+          \State $\ldots$
+          \State \only<1>{$x \gets a.\field{x}$}
+                 \only<2>{$\cancel{x \gets a.\field{x}} \Rightarrow x \gets 42$}
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Практические результаты}
+
+  \begin{itemize}
+    \item<1-> Алгоритм анализа реализован в статическом компиляторе \java
+              байткода в рамках проекта \eng{Excelsior Research Virtual
+              Machine}.
+    \item<1-> Реализованы следующие оптимизации:
+          \begin{itemize}
+            \item<2-> удаление избыточных чтений полей
+            \item<4-> взрыв объектов и аллокация объектов на стеке
+          \end{itemize}
+  \end{itemize}
+
+  \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Избыточные чтения}<2->
+        \begin{algorithmic}[1]
+          \State $x.\field{f} \gets 42$
+          \State $y.\field{f} \gets 37$
+          \State \only<-2>{$u \gets x.\field{f}$}
+                 \only<3->{$\cancel{u \gets x.\field{f}} \Rightarrow u \gets 42$}
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Взрыв объектов}<4->
+        \begin{algorithmic}[1]
+          \only<-4>{
+            \State $r \gets \op{new}(\type{Rect})(a, b)$
+            \State $u \gets r.\op{area}()$
+          }
+          \only<5->{
+            \State $\cancel{r \gets \op{new}(\type{Rect})(a, b)}$
+            \State $\cancel{u \gets r.\op{area}()} \Rightarrow u \gets a \cdot b$
+          }
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
 \begin{frame}{Результаты}
 
   Сделано следующее:
@@ -237,7 +353,7 @@
           \M"=переменной
     \item разработан алгоритм, проводящий нечувствительный к потоку анализ над
           множеством операций, работающих с \M"=переменной
-    \item реализован прототип алгоритма в рамках проекта \eng{Excelsior
+    \item реализован алгоритм в рамках проекта \eng{Excelsior
           Research Virtual Machine}
   \end{itemize}
 
@@ -247,12 +363,8 @@
 
   Планируется сделать следующее:
   \begin{itemize}
-    \item доказать сходимость и корректность разработанного алгоритма, привести
-          теоретические оценки сложности
-    \item проработать внутреннее представление для эффективного хранения
-          результатов анализа
-    \item реализовать алгоритм в рамках проекта \eng{Excelsior~RVM} и провести
-          практические эксперименты
+    \item внедрить в промышленный компилятор \eng{Excelsior JET}
+    \item адаптировать для межпроцедурного анализа
   \end{itemize}
 
 \end{frame}
