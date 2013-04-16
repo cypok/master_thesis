@@ -220,13 +220,13 @@
   \begin{block}{Разные источники объектов}
     \begin{algorithmic}[1]
       \State $x \gets \op{new}(\type{T})$
-        \Comment $\pts{x} \gets \{O_1\}$
+        \Comment $\pts{x} = \{O_1\}$
       \State $y \gets \op{new}(\type{T})$
-        \Comment $\pts{y} \gets \{O_2\}$
+        \Comment $\pts{y} = \{O_2\}$
       \State $u \gets \op{getstatic}(\M_0, \sfield{T}{f})$
-        \Comment $\pts{u} \gets \{O_{global}\}$
+        \Comment $\pts{u} = \{O_{global}\}$
       \State $v \gets \op{getstatic}(\M_0, \sfield{T}{g})$
-        \Comment $\pts{v} \gets \{O_{global}\}$
+        \Comment $\pts{v} = \{O_{global}\}$
     \end{algorithmic}
   \end{block}
 
