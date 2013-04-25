@@ -1,0 +1,4 @@
+* java.lang.Reference - всегда ли утекают?
+* нужна ли разбивка ClassObject ноды на более простую, без побочных эффектов?
+* Совмещать mayAlias и mustAlias: putstatic A.f = x => { A.f -> x }
+

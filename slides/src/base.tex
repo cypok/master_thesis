@@ -16,8 +16,12 @@
 
 \usepackage{algpseudocode}
 \newcommand{\algorithmictitle}[1]{\hspace{8mm}\textbf{#1}}
+\algrenewcommand{\algorithmiccomment}[1]{\hfill #1}
 
-\usepackage{cancel}
+\usepackage{ulem}
+\let\oldsout\sout
+\renewcommand{\sout}[1]{\text{\oldsout{\ensuremath{#1}}}}
+\renewcommand<>{\sout}[1]{\alt#2{\beameroriginal{\sout}{#1}}{#1}}
 
 \usepackage{../../common/cypokcommon}
 
@@ -35,13 +39,18 @@
   \insertframenumber\,/\,\inserttotalframenumber
 }
 
+% hide navigation symbols
+\beamertemplatenavigationsymbolsempty
+
 \newcommand{\java}{\eng{Java}\xspace}
 
 \newcommand{\M}{\ensuremath{\mathbf{M}}}
+\newcommand{\Mfield}[1]{\ensuremath{\mathbf{#1}}}
 
 \newcommand{\type}[1]{\mathsf{#1}}
 \newcommand{\field}[1]{\mathsf{#1}}
 \newcommand{\sfield}[2]{\type{#1}.\field{#2}}
+\newcommand{\method}[1]{\mathsf{#1}}
 
 \newcommand{\op}[1]{\mathbf{#1}}
 \newcommand{\pts}[1]{\widebar{#1}}
@@ -116,29 +125,67 @@
 
 \end{frame}
 
+\begin{frame}{Мотивация}
+
+  \begin{center}
+    \begin{minipage}[t]{0.35\textwidth}
+      \begin{block}{Избыточные чтения}
+        \begin{algorithmic}[1]
+          \State $x.\field{f} \gets 42$
+          \State $y.\field{f} \gets 37$
+          \State $u \gets \sout<2->{x.\field{f}}
+                          \only<2->{\ 42}$
+        \end{algorithmic}
+      \end{block}
+    \end{minipage}
+
+    \medskip
+    \visible<2->{Только если $x$ и $y$ не могут быть синонимами.}
+  \end{center}
+
+\end{frame}
+
 \begin{frame}{Недостатки предыдущей работы}
 
-  \begin{block}{Отсутствие чувствительности к потоку управления при работе с
-      полями объектов}
-    \begin{algorithmic}[1]
-      \State $x \gets \op{new}~\type{T}$
-      \State $x.f \gets \op{new}~\type{Object}$
-      \State $a \gets x.f$
-      \State $x.f \gets \op{new}~\type{Object}$
-      \State $b \gets x.f$
-    \end{algorithmic}
-  \end{block}
+  \begin{center}
+    {\large $a$ и $b$~--- могут ли быть синонимами?}
+  \end{center}
 
-  \medskip
-  \centerline{\large $a$ и $b$~--- синонимы?}
-  \centerline{Для алгоритма анализа, нечувствительного к потоку управления~---
-  да!}
+  \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Проблема с переменными}
+        \begin{algorithmic}[1]
+          \State $x\visible<2->{_1} \gets \op{new}~\type{T}$
+          \State $a \gets x\visible<2->{_1}$
+          \State $x\visible<2->{_2} \gets \op{new}~\type{T}$
+          \State $b \gets x\visible<2->{_2}$
+        \end{algorithmic}
+      \end{block}
+
+      \medskip
+      \visible<3->{\centerline{Нет.}}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Проблема с полями}<4->
+        \begin{algorithmic}[1]
+          \State $x \gets \op{new}~\type{T}$
+          \State $x.f \gets \op{new}~\type{Object}$
+          \State $a \gets x.f$
+          \State $x.f \gets \op{new}~\type{Object}$
+          \State $b \gets x.f$
+        \end{algorithmic}
+      \end{block}
+
+      \medskip
+      \visible<5->{\centerline{Да.}}
+    \end{column}
+  \end{columns}
 
 \end{frame}
 
 \begin{frame}{Суть нечувствительного к потоку управления анализа}
 
-  \centerline{Видение программы анализом, который к потоку управления \ldots}
+  \centerline{В\'{и}дение программы анализом, который к потоку управления \ldots}
 
   \begin{columns}[t]
     \begin{column}{0.5\textwidth}
@@ -169,22 +216,36 @@
 
 \begin{frame}{\M"=переменная}
 
-  \begin{block}{Программа с \M"=переменной}
-    \begin{algorithmic}[1]
-      \State $u \gets \op{getfield}(\M_0, a, \field{f})$
-        \Comment $u \gets a.\field{f}$
-      \If{\ldots}
-        \State $\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x)$
-          \Comment $a.\field{f} \gets x$
-      \Else
-        \State $\M_2 \gets \op{putfield}(\M_0, a, \field{f}, y)$
-          \Comment $a.\field{f} \gets y$
-      \EndIf
-      \State $\M_3 \gets \op{phi}(\M_1, \M_2)$
-      \State $v \gets \op{getfield}(\M_3, a, \field{f})$
-        \Comment $v \gets a.\field{f}$
-    \end{algorithmic}
-  \end{block}
+  \begin{columns}[t]
+    \begin{column}{0.4\textwidth}
+      \begin{block}{Исходная программа}
+        \begin{algorithmic}[1]
+          \State $u \gets a.\field{f}$
+          \If{(\ldots)}
+            \State $a.\field{f} \gets x$
+          \Else
+            \State $a.\field{f} \gets y$
+          \EndIf
+          \State
+          \State $v \gets a.\field{f}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \begin{block}{Программа с \M"=переменной}
+        \begin{algorithmic}
+          \State $u \gets \op{getfield}(\M_0, a, \field{f})$
+          \If{(\ldots)}
+            \State $\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x)$
+          \Else
+            \State $\M_2 \gets \op{putfield}(\M_0, a, \field{f}, y)$
+          \EndIf
+          \State $\M_3 \gets \op{phi}(\M_1, \M_2)$
+          \State $v \gets \op{getfield}(\M_3, a, \field{f})$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
 
 \end{frame}
 
@@ -193,21 +254,21 @@
   \begin{columns}[t]
     \begin{column}{0.5\textwidth}
       \begin{align*}
+        &\M_0 \gets \op{initialmemory } \\
         &\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x) \\
         &\M_1 \gets \op{putstatic}(\M_0, \sfield{T}{f}, x) \\
-        &\M_0 \gets \op{initialmemory } \\
-        &\M_1 \gets \op{escape}(\M_0, a_1, \ldots, a_N) \\
         &\M_1 \gets \op{reload}(\M_0) \\
+        &\M_1 \gets \op{escape}(\M_0, a_1, \ldots, a_N) \\
         &\M_x \gets \op{phi}(\M_1, \ldots, \M_N) \\
       \end{align*}
     \end{column}
     \begin{column}{0.5\textwidth}
       \begin{align*}
+        &x \gets \op{null } \\
         &x \gets \op{getfield}(\M_0, a, \field{f}) \\
         &x \gets \op{getstatic}(\M_0, \sfield{T}{f}) \\
+        &x \gets \op{new}~\type{T} \\
         &x \gets \op{shared}(\M_0) \\
-        &x \gets \op{null } \\
-        &x \gets \op{new}(\type{T}) \\
         &x \gets \op{phi}(a_1, \ldots, a_N) \\
       \end{align*}
     \end{column}
@@ -215,47 +276,81 @@
 
 \end{frame}
 
-\begin{frame}{Абстрактные объекты}
-
-  \begin{block}{Разные источники объектов}
-    \begin{algorithmic}[1]
-      \State $x \gets \op{new}(\type{T})$
-        \Comment $\pts{x} = \{O_1\}$
-      \State $y \gets \op{new}(\type{T})$
-        \Comment $\pts{y} = \{O_2\}$
-      \State $u \gets \op{getstatic}(\M_0, \sfield{T}{f})$
-        \Comment $\pts{u} = \{O_{global}\}$
-      \State $v \gets \op{getstatic}(\M_0, \sfield{T}{g})$
-        \Comment $\pts{v} = \{O_{global}\}$
-    \end{algorithmic}
-  \end{block}
-
-\end{frame}
-
 \begin{frame}{Граф операций}
 
   \begin{columns}[t]
-    \begin{column}[T]{0.67\textwidth}
-      \includegraphics[width=\textwidth]{refmem_graph}
+    \begin{column}{0.67\textwidth}
+      \begin{figure}
+        \includegraphics[width=\textwidth]{refmem_graph}
+      \end{figure}
     \end{column}
-    \begin{column}[T]{0.33\textwidth}
-      \begin{block}{\java программа}
+    \begin{column}{0.33\textwidth}
+      \begin{block}{Программа}
         \begin{algorithmic}[1]
-          \State $a \gets \op{new}(\type{A})$
-          \If{\ldots}
-            \State $a.\field{f} \gets \op{new}(\type{A})$
+          \State $a \gets \op{new}~\type{A}$
+          \If{(\ldots)}
+            \State $a.\field{f} \gets \op{new}~\type{A}$
           \Else
             \State $a.\field{f} \gets \op{arg}(1)$
           \EndIf
-          \State $\op{return}(a.\field{f})$
+          \State $\op{return}~a.\field{f}$
         \end{algorithmic}
       \end{block}
     \end{column}
   \end{columns}
 
   \medskip
-  \centerline{\small Красные стрелки~--- зависимость по значению.}
-  \centerline{\small Синие стрелки~--- зависимость по памяти.}
+  \begin{center}
+    \small
+    Красные стрелки~--- зависимость по значению. \\
+    Синие стрелки~--- зависимость по памяти.
+  \end{center}
+
+\end{frame}
+
+\begin{frame}{Представление целей указателей}
+
+  \begin{block}{Внутреннее представление}
+    \begin{algorithmic}
+      \State $\M_0 \gets \op{initialmemory}$
+        \visible<3->{\Comment $\M_0 = \{\Mfield{fields}\colon \emptyset\}$}
+      \State $a \gets \op{new}~\type{A}$
+        \visible<2->{\Comment $\pts{a} = \{O_1\}$}
+      \State
+        \State $x_1 \gets \op{new}~\type{A}$
+          \visible<2->{\Comment $\pts{x_1} = \{O_2\}$}
+        \State $\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x_1)$
+          \visible<3->{\Comment $\M_1 = \{\Mfield{fields}\colon
+            \{ O_1.\field{f} \Rightarrow \{ O_2 \} \}\}$}
+      \State
+        \State $x_2 \gets \op{arg}(1)$
+          \visible<2->{\Comment $\pts{x_2} = \{O_{global}\}$}
+        \State $\M_2 \gets \op{putfield}(\M_0, a, \field{f}, x_2)$
+          \visible<3->{\Comment $\M_2 = \{\Mfield{fields}\colon
+            \{ O_1.\field{f} \Rightarrow \{ O_{global} \} \}\}$}
+      \State
+      \State $\M_3 \gets \op{phi}(\M_1, \M_2)$
+        \visible<3->{\Comment $\M_3 = \{\Mfield{fields}\colon
+          \{ O_1.\field{f} \Rightarrow \{ O_2, O_{global} \} \}\}$}
+      \State $y \gets \op{getfield}(\M_3, a, \field{f})$
+        \visible<4->{\Comment $\pts{y} = \{ O_2, O_{global} \}$}
+    \end{algorithmic}
+  \end{block}
+
+\end{frame}
+
+\begin{frame}{Представление целей указателей}
+
+  \begin{align*}
+    \M = \{&\\
+    &\Mfield{fields} \text{~--- множество целей полей абстрактных объектов},\\
+    &\Mfield{statics} \text{~--- множество целей статических полей},\\
+    &\Mfield{shared} \text{~--- множество разделяемых объектов},\\
+    &\Mfield{escaped} \text{~--- множество утекающих объектов}.\\
+    \}&
+  \end{align*}
+
+  \[\pts{x} \text{~--- множество целей переменной.}\]
 
 \end{frame}
 
@@ -269,37 +364,143 @@
 
   \medskip
   \textbf{Результаты анализа:} \\
-  выражения ссылочного типа $a$ и $b$ являются синонимами тогда и только тогда,
-  когда их множества целей имеют непустое пересечение
+  выражения ссылочного типа $a$ и $b$ могут являться синонимами тогда и только
+  тогда, когда их множества целей имеют непустое пересечение
 
 \end{frame}
 
-\begin{frame}{Модель памяти языка Java}
+\begin{frame}{Проблема многопоточности}
+
   \begin{columns}[t]
     \begin{column}{.5\textwidth}
-      \begin{block}{Чтение из \eng{volatile} поля}
-        \begin{algorithmic}
-          \State $a.\field{x} \gets 42$
+      \begin{block}{Однопоточная программа}
+        \begin{algorithmic}[1]
+          \State $b \gets \op{new}~\type{A}$
+          \State $b.\field{f} \gets 37$
           \State $\ldots$
-          \State $t \gets b.\field{volatileField}$
+          \State $\op{escape}(b)$
           \State $\ldots$
-          \State $x \gets a.\field{x}$
+          \State $x \gets \sout<2->{b.\field{f}}
+                          \only<2->{\ 37}$
+          \State $\ldots$
+          \State $y \gets \sout<2->{b.\field{f}}
+                          \only<2->{\ 37}$
         \end{algorithmic}
       \end{block}
     \end{column}
     \begin{column}{.5\textwidth}
-      \begin{block}{Чтение из обычного поля}
-        \begin{algorithmic}
-          \State $a.\field{x} \gets 42$
+      \begin{block}{Многопоточная программа}
+        \begin{algorithmic}[1]
+          \State $b \gets \op{new}~\type{A}$
+          \State $b.\field{f} \gets 37$
           \State $\ldots$
-          \State $t \gets b.\field{normalField}$
-          \State $\ldots$
-          \State \only<1>{$x \gets a.\field{x}$}
-                 \only<2>{$\cancel{x \gets a.\field{x}} \Rightarrow x \gets 42$}
+          \State $\op{escape}(b)$
+          \State $\only<-3>{\ldots}
+                  \only<4->{\op{while}~(\ldots)\ \ldots}$
+          \State $x \gets \sout<3->{b.\field{f}}
+                          \only<3->{\sout<4->{\ 37}}
+                          \only<4->{\ b.\field{f}}$
+          \State $\only<-4>{\ldots}
+                  \only<5->{\op{while}~(\ldots)\ \ldots}$
+          \State $y \gets \sout<3->{b.\field{f}}
+                          \only<3->{\sout<4->{\ 37}}
+                          \only<4->{\sout<5->{\ x}}
+                          \only<5->{\ b.\field{f}}$
         \end{algorithmic}
       \end{block}
     \end{column}
   \end{columns}
+
+\end{frame}
+
+\begin{frame}{Проблема многопоточности}
+
+  \begin{center}
+    \begin{minipage}[t]{0.60\textwidth}
+      \begin{block}{Многопоточная программа + \eng{JMM}}
+        \begin{algorithmic}[1]
+          \State $b \gets \op{new}~\type{A}$
+          \State $b.\field{f} \gets 37$
+          \State $\ldots$
+          \State $\op{escape}(b)$
+          \State $\only<-2>{\ldots}
+                  \only<3>{\op{while}~(\ldots)\ \ldots}
+                  \only<4->{\op{while}~(!\sfield{Data}{ready})\ \ldots}$
+          \State $x \gets \sout<2->{b.\field{f}}
+                          \only<2->{\sout<4->{\ 37}}
+                          \only<4->{\ b.\field{f}}$
+          \State $\only<-2>{\ldots}
+                  \only<3->{\op{while}~(\ldots)\ \ldots}$
+          \State $y \gets \sout<2->{b.\field{f}}
+                          \only<2->{\sout<4->{\ 37}}
+                          \only<4->{\ x}$
+        \end{algorithmic}
+      \end{block}
+      \onslide+<4->{
+        $\sfield{Data}{ready}$~--- статическое \eng{volatile} поле.}
+    \end{minipage}
+  \end{center}
+
+\end{frame}
+
+\begin{frame}{Некорректно синхронизованные программы}
+
+  $\sfield{Shared}{data}$, $\sfield{Shared}{ready}$~--- обычные статические
+  поля.
+
+  \begin{columns}[t]
+    \begin{column}{.5\textwidth}
+      \begin{block}{Поток 1 <<Производитель>>}
+        \begin{algorithmic}[1]
+          \State $\sfield{Shared}{data} \gets \op{calc}(\ldots)$
+          \State $\sfield{Shared}{ready} \gets \op{true}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+    \begin{column}{.5\textwidth}
+      \begin{block}{Поток 2 <<Потребитель>>}
+        \begin{algorithmic}[1]
+          \State $\alt<1>{\vphantom{A}\ldots}{result \gets \sfield{Shared}{data}}$
+          \While{$(!\sfield{Shared}{ready})$}
+            \State \ldots
+          \EndWhile
+          \State $\sout<2->{result \gets \sfield{Shared}{data}}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+\begin{frame}{Внутреннее представление сложных операций}
+
+  \begin{columns}[t]
+    \begin{column}{.5\textwidth}
+      \begin{align*}
+        a \gets \sfield{T}{f} & \\
+        (\text{статическое \eng{volatile} поле}) & \\
+        & \\
+        \op{monitorenter}(\ldots) & \\
+        & \\
+        c \gets \op{invoke}(\method{foo}, p_1, \ldots, p_N) & \\
+        & \\
+        & \\
+      \end{align*}
+    \end{column}
+    \begin{column}{.5\textwidth}
+      \begin{align*}
+        & \M_1 \gets \op{reload}(\M_0) \\
+        & a \gets \op{getstatic}(\M_1, \sfield{T}{f}) \\
+        & \\
+        & \M_2 \gets \op{reload}(\M_1) \\
+        & \\
+        & \M_3 \gets \op{escape}(\M_2, p_1, \ldots, p_N) \\
+        & \M_4 \gets \op{reload}(\M_3) \\
+        & c \gets \op{shared}(\M_4) \\
+      \end{align*}
+    \end{column}
+  \end{columns}
+
 \end{frame}
 
 \begin{frame}{Практические результаты}
@@ -317,28 +518,23 @@
 
   \begin{columns}[t]
     \begin{column}{0.5\textwidth}
-      \begin{block}{Избыточные чтения}<2->
+      \visible<2->{\begin{block}{Избыточные чтения}
         \begin{algorithmic}[1]
           \State $x.\field{f} \gets 42$
           \State $y.\field{f} \gets 37$
-          \State \only<-2>{$u \gets x.\field{f}$}
-                 \only<3->{$\cancel{u \gets x.\field{f}} \Rightarrow u \gets 42$}
+          \State $u \gets \sout<3->{x.\field{f}}
+                          \only<3->{\ 42}$
         \end{algorithmic}
-      \end{block}
+      \end{block}}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \begin{block}{Взрыв объектов}<4->
+      \visible<4->{\begin{block}{Взрыв объектов}
         \begin{algorithmic}[1]
-          \only<-4>{
-            \State $r \gets \op{new}(\type{Rect})(a, b)$
-            \State $u \gets r.\op{area}()$
-          }
-          \only<5->{
-            \State $\cancel{r \gets \op{new}(\type{Rect})(a, b)}$
-            \State $\cancel{u \gets r.\op{area}()} \Rightarrow u \gets a \cdot b$
-          }
+          \State $\sout<5->{r \gets \op{new}~\type{Rect}(a, b)}$
+          \State $u \gets \sout<5->{r.\op{area}()}
+                        \ \only<5->{a \cdot b}$
         \end{algorithmic}
-      \end{block}
+      \end{block}}
     \end{column}
   \end{columns}
 
