@@ -1,4 +1,11 @@
 * java.lang.Reference - всегда ли утекают?
 * нужна ли разбивка ClassObject ноды на более простую, без побочных эффектов?
 * Совмещать mayAlias и mustAlias: putstatic A.f = x => { A.f -> x }
+* reorder putfield? Если два putfield'а независимы, можем развязать их "линию"
+  m1 = putfield(m0, x.f)    m1 = putfield(m0, x.f)
+  m2 = putfield(m1, y.f) => m2 = putfield(m0, x.f)
+  m3 = reload(m2)           m3 = reload(join(m1, m2))
 
+Текст:
+* комментарии в коде сделать курсивом без треугольника
+* new в коде должен быть без скобок, как и return
