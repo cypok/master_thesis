@@ -32,12 +32,23 @@
 \input{../../common/gitinfo}
 
 % add frame number to footline
-\newcommand*\oldmacro{}
-\let\oldmacro\insertshorttitle
+\newcommand*\oldinsertshorttitle{}
+\let\oldinsertshorttitle\insertshorttitle
 \renewcommand*\insertshorttitle{
-  \oldmacro\hfill
+  \oldinsertshorttitle \hfill
   \insertframenumber\,/\,\inserttotalframenumber
 }
+
+\newenvironment{backup}
+  {
+    \appendix
+    \newcounter{framenumberappendix}
+    \setcounter{framenumberappendix}{\value{framenumber}}
+  }
+  {
+    \addtocounter{framenumberappendix}{-\value{framenumber}}
+    \addtocounter{framenumber}{\value{framenumberappendix}}
+  }
 
 % hide navigation symbols
 \beamertemplatenavigationsymbolsempty
@@ -125,48 +136,11 @@
 
 \end{frame}
 
-\begin{frame}{Мотивация}
-
-  \begin{center}
-    \begin{minipage}[t]{0.35\textwidth}
-      \begin{block}{Избыточные чтения}
-        \begin{algorithmic}[1]
-          \State $x.\field{f} \gets 42$
-          \State $y.\field{f} \gets 37$
-          \State $u \gets \sout<2->{x.\field{f}}
-                          \only<2->{\ 42}$
-        \end{algorithmic}
-      \end{block}
-    \end{minipage}
-
-    \medskip
-    \visible<2->{Только если $x$ и $y$ не могут быть синонимами.}
-  \end{center}
-
-\end{frame}
-
 \begin{frame}{Недостатки предыдущей работы}
 
   \begin{center}
-    {\large $a$ и $b$~--- могут ли быть синонимами?}
-  \end{center}
-
-  \begin{columns}[t]
-    \begin{column}{0.5\textwidth}
-      \begin{block}{Проблема с переменными}
-        \begin{algorithmic}[1]
-          \State $x\visible<2->{_1} \gets \op{new}~\type{T}$
-          \State $a \gets x\visible<2->{_1}$
-          \State $x\visible<2->{_2} \gets \op{new}~\type{T}$
-          \State $b \gets x\visible<2->{_2}$
-        \end{algorithmic}
-      \end{block}
-
-      \medskip
-      \visible<3->{\centerline{Нет.}}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \begin{block}{Проблема с полями}<4->
+    \begin{minipage}[t]{0.60\textwidth}
+      \begin{block}{Проблема с полями}
         \begin{algorithmic}[1]
           \State $x \gets \op{new}~\type{T}$
           \State $x.f \gets \op{new}~\type{Object}$
@@ -175,11 +149,13 @@
           \State $b \gets x.f$
         \end{algorithmic}
       \end{block}
+    \end{minipage}
 
-      \medskip
-      \visible<5->{\centerline{Да.}}
-    \end{column}
-  \end{columns}
+    \medskip
+    $a$ и $b$~--- могут ли быть синонимами?
+
+    \visible<2->{Да.}
+  \end{center}
 
 \end{frame}
 
@@ -308,12 +284,187 @@
 
 \end{frame}
 
-\begin{frame}{Представление целей указателей}
+\begin{frame}{Абстрактные объекты}
+
+  \begin{center}
+    \begin{minipage}[t]{0.70\textwidth}
+      \begin{block}{Разные источники объектов}
+        \begin{algorithmic}[1]
+          \State $x \gets \op{new}(\type{T})$
+            \Comment $\pts{x} = \{O_1\}$
+          \State $y \gets \op{new}(\type{T})$
+            \Comment $\pts{y} = \{O_2\}$
+          \State $u \gets \op{getstatic}(\M_0, \sfield{T}{f})$
+            \Comment $\pts{u} = \{O_{global}\}$
+          \State $v \gets \op{arg}(1)$
+            \Comment $\pts{v} = \{O_{global}\}$
+        \end{algorithmic}
+      \end{block}
+
+    \end{minipage}
+  \end{center}
+
+  \medskip
+  \centerline{$AbstractObjects = \{O_1, O_2, O_{global}\}$}
+
+\end{frame}
+
+\begin{frame}{Потоковые свойства}
+
+  $\pts{expr} \subset AbstractObjects$
+
+  \uncover<2->{\begin{align*}
+    & \M = (\\
+    & \quad \Mfield{fields} \subset
+         AbstractObjects \times InstanceFields
+           \times \powerset{AbstractObjects}, \\
+    & \quad \Mfield{statics} \subset
+         StaticFields \times \powerset{AbstractObjects}, \\
+    & \quad \Mfield{shared} \subset AbstractObjects, \\
+    & \quad \Mfield{escaped} \subset AbstractObjects\\
+    & )
+  \end{align*}}
+
+\end{frame}
+
+\begin{frame}{Пример потоковых функций}
+
+  \[ x \gets \op{getstatic}(\M, \sfield{T}{f}) \Rightarrow \]
+  \[
+    \pts{x} = \M.\Mfield{shared} \cup \M.\Mfield{statics}(\sfield{T}{f}).
+  \]
+
+  \[ x \gets \op{getfield}(\M, a, \field{f}) \Rightarrow \]
+  \[
+    \pts{x} = \left( \bigcup_{O \in \pts{a}} \M.\Mfield{fields}(O,
+    \field{f}) \right) \cup
+    \begin{cases}
+      \M.\Mfield{shared}, & \text{если } \pts{a} \cap
+        \M.\Mfield{shared} \ne \emptyset; \\
+      \emptyset, & \text{иначе}.
+    \end{cases}
+  \]
+
+\end{frame}
+
+\begin{frame}{Результаты анализа}
+
+  Выражения ссылочного типа могут являться синонимами тогда и только
+  тогда, когда их множества целей, вычисленные потоковым анализом, имеют
+  непустое пересечение.
+
+\end{frame}
+
+\begin{frame}{Модель памяти языка Java}
+  \begin{columns}[t]
+    \begin{column}{.5\textwidth}
+      \begin{block}{Чтение из \eng{volatile} поля}
+        \begin{algorithmic}
+          \State $a.\field{x} \gets 42$
+          \State $\ldots$
+          \State $t \gets b.\field{volatileField}$
+          \State $\ldots$
+          \State $x \gets a.\field{x}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+    \begin{column}{.5\textwidth}
+      \begin{block}{Чтение из обычного поля}
+        \begin{algorithmic}
+          \State $a.\field{x} \gets 42$
+          \State $\ldots$
+          \State $t \gets b.\field{normalField}$
+          \State $\ldots$
+          \State $x \gets \sout<2->{a.\field{x}}
+                          \only<2->{\ 42}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Практические результаты}
+
+  \begin{itemize}
+    \item<1-> Алгоритм анализа реализован в статическом компиляторе \java
+              байткода в рамках проекта \eng{Excelsior Research Virtual
+              Machine}.
+    \item<1-> Реализованы следующие оптимизации:
+          \begin{itemize}
+            \item<2-> удаление избыточных чтений полей
+            \item<3-> взрыв объектов и аллокация объектов на стеке
+          \end{itemize}
+  \end{itemize}
+
+  \begin{columns}[t]
+    \begin{column}{0.5\textwidth}
+      \visible<2->{\begin{block}{Избыточные чтения}
+        \begin{algorithmic}[1]
+          \State $x.\field{f} \gets 42$
+          \State $y.\field{f} \gets 37$
+          \State $u \gets \sout<2->{x.\field{f}}
+                          \only<2->{\ 42}$
+        \end{algorithmic}
+      \end{block}}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \visible<3->{\begin{block}{Взрыв объектов}
+        \begin{algorithmic}[1]
+          \State $\sout<3->{r \gets \op{new}~\type{Rect}(a, b)}$
+          \State $u \gets \sout<3->{r.\op{area}()}
+                        \ \only<3->{a \cdot b}$
+        \end{algorithmic}
+      \end{block}}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+\begin{frame}{Результаты}
+
+  Сделано следующее:
+  \begin{itemize}
+    \item изучены существующие алгоритмы анализа указателей и синонимов
+    \item разработана схема выражения неявных зависимостей по памяти с помощью
+          \M"=переменной
+    \item разработан алгоритм, проводящий нечувствительный к потоку анализ над
+          множеством операций, работающих с \M"=переменной
+    \item реализован алгоритм в рамках проекта \eng{Excelsior
+          Research Virtual Machine}
+  \end{itemize}
+
+  Получен диплом 1 степени на 51-ой международной научной студенческой
+  конференции <<Студент и научно-технический прогресс>>.
+
+\end{frame}
+
+\begin{frame}{Дальнейшая работа}
+
+  Планируется сделать следующее:
+  \begin{itemize}
+    \item внедрить в промышленный компилятор \eng{Excelsior JET}
+    \item адаптировать для межпроцедурного анализа
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{Конец}
+  \centerline{\huge Спасибо за внимание!}
+\end{frame}
+
+\begin{backup}
+
+\begin{frame}{Запасные слайды}
+  \centerline{\ldots}
+\end{frame}
+
+\begin{frame}{Представление потоковых свойств}
 
   \begin{block}{Внутреннее представление}
     \begin{algorithmic}
       \State $\M_0 \gets \op{initialmemory}$
-        \visible<3->{\Comment $\M_0 = \{\Mfield{fields}\colon \emptyset\}$}
+        \visible<3->{\Comment $\M_0 = \{\Mfield{fields}\colon
+          \{ O_1.\field{f} \colon \emptyset \}\}$}
       \State $a \gets \op{new}~\type{A}$
         \visible<2->{\Comment $\pts{a} = \{O_1\}$}
       \State
@@ -321,51 +472,21 @@
           \visible<2->{\Comment $\pts{x_1} = \{O_2\}$}
         \State $\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x_1)$
           \visible<3->{\Comment $\M_1 = \{\Mfield{fields}\colon
-            \{ O_1.\field{f} \Rightarrow \{ O_2 \} \}\}$}
+            \{ O_1.\field{f} \colon \{ O_2 \} \}\}$}
       \State
         \State $x_2 \gets \op{arg}(1)$
           \visible<2->{\Comment $\pts{x_2} = \{O_{global}\}$}
         \State $\M_2 \gets \op{putfield}(\M_0, a, \field{f}, x_2)$
           \visible<3->{\Comment $\M_2 = \{\Mfield{fields}\colon
-            \{ O_1.\field{f} \Rightarrow \{ O_{global} \} \}\}$}
+            \{ O_1.\field{f} \colon \{ O_{global} \} \}\}$}
       \State
       \State $\M_3 \gets \op{phi}(\M_1, \M_2)$
         \visible<3->{\Comment $\M_3 = \{\Mfield{fields}\colon
-          \{ O_1.\field{f} \Rightarrow \{ O_2, O_{global} \} \}\}$}
+          \{ O_1.\field{f} \colon \{ O_2, O_{global} \} \}\}$}
       \State $y \gets \op{getfield}(\M_3, a, \field{f})$
         \visible<4->{\Comment $\pts{y} = \{ O_2, O_{global} \}$}
     \end{algorithmic}
   \end{block}
-
-\end{frame}
-
-\begin{frame}{Представление целей указателей}
-
-  \begin{align*}
-    \M = \{&\\
-    &\Mfield{fields} \text{~--- множество целей полей абстрактных объектов},\\
-    &\Mfield{statics} \text{~--- множество целей статических полей},\\
-    &\Mfield{shared} \text{~--- множество разделяемых объектов},\\
-    &\Mfield{escaped} \text{~--- множество утекающих объектов}.\\
-    \}&
-  \end{align*}
-
-  \[\pts{x} \text{~--- множество целей переменной.}\]
-
-\end{frame}
-
-\begin{frame}{Алгоритм анализа}
-
-  \textbf{Алгоритм анализа:}
-  \begin{enumerate}
-    \item построение вспомогательного внутреннего представления
-    \item проведение потокового анализа на множестве примитивных операций
-  \end{enumerate}
-
-  \medskip
-  \textbf{Результаты анализа:} \\
-  выражения ссылочного типа $a$ и $b$ могут являться синонимами тогда и только
-  тогда, когда их множества целей имеют непустое пересечение
 
 \end{frame}
 
@@ -503,73 +624,7 @@
 
 \end{frame}
 
-\begin{frame}{Практические результаты}
-
-  \begin{itemize}
-    \item<1-> Алгоритм анализа реализован в статическом компиляторе \java
-              байткода в рамках проекта \eng{Excelsior Research Virtual
-              Machine}.
-    \item<1-> Реализованы следующие оптимизации:
-          \begin{itemize}
-            \item<2-> удаление избыточных чтений полей
-            \item<4-> взрыв объектов и аллокация объектов на стеке
-          \end{itemize}
-  \end{itemize}
-
-  \begin{columns}[t]
-    \begin{column}{0.5\textwidth}
-      \visible<2->{\begin{block}{Избыточные чтения}
-        \begin{algorithmic}[1]
-          \State $x.\field{f} \gets 42$
-          \State $y.\field{f} \gets 37$
-          \State $u \gets \sout<3->{x.\field{f}}
-                          \only<3->{\ 42}$
-        \end{algorithmic}
-      \end{block}}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \visible<4->{\begin{block}{Взрыв объектов}
-        \begin{algorithmic}[1]
-          \State $\sout<5->{r \gets \op{new}~\type{Rect}(a, b)}$
-          \State $u \gets \sout<5->{r.\op{area}()}
-                        \ \only<5->{a \cdot b}$
-        \end{algorithmic}
-      \end{block}}
-    \end{column}
-  \end{columns}
-
-\end{frame}
-
-\begin{frame}{Результаты}
-
-  Сделано следующее:
-  \begin{itemize}
-    \item изучены существующие алгоритмы анализа указателей и синонимов
-    \item разработана схема выражения неявных зависимостей по памяти с помощью
-          \M"=переменной
-    \item разработан алгоритм, проводящий нечувствительный к потоку анализ над
-          множеством операций, работающих с \M"=переменной
-    \item реализован алгоритм в рамках проекта \eng{Excelsior
-          Research Virtual Machine}
-  \end{itemize}
-
-\end{frame}
-
-\begin{frame}{Дальнейшая работа}
-
-  Планируется сделать следующее:
-  \begin{itemize}
-    \item внедрить в промышленный компилятор \eng{Excelsior JET}
-    \item адаптировать для межпроцедурного анализа
-  \end{itemize}
-
-\end{frame}
-
-\begin{frame}
-
-  \centerline{\huge Спасибо за внимание!}
-
-\end{frame}
+\end{backup}
 
 \end{document}
 
