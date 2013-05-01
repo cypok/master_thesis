@@ -38,6 +38,7 @@
 \usepackage{algpseudocode}
 \floatname{algorithm}{Пример}
 \newcommand{\algorithmictitle}[1]{\hspace{8mm}\textbf{#1}}
+\algrenewcommand{\algorithmiccomment}[1]{\hfill \textit{#1}}
 
 \usepackage{multicol}
 
@@ -650,10 +651,10 @@
         \begin{algorithmic}[1]
           \State $a \gets \op{new}~\type{Object}$
           \State $b \gets$ \Call{GetFromShared}{}
-            \Comment получение объекта из разделяемой памяти
+            \Comment{получение объекта из разделяемой памяти}
           \State \Call{EscapeToShared}{$a$}
             \label{code:bad_flow_sensitivity_2:escape}
-            \Comment утекание объекта в разделяемую память
+            \Comment{утекание объекта в разделяемую память}
         \end{algorithmic}
       \end{algorithm}
 
@@ -691,11 +692,11 @@
           \State $x \gets \op{new}~\type{T}$
           \State $x.f \gets \op{new}~\type{Object}$
             \label{code:bad_multithreading:obj_creation}
-          \State $\type{T}.sfield \gets x$
-            \Comment утекание $x$ в статическое поле класса
+          \State $\sfield{T}{sfield} \gets x$
+            \Comment{утекание $x$ в статическое поле класса}
           \State $a \gets x.f$
           \State \Call{ReloadFields}{}
-            \Comment операция, приводящая к перечитыванию полей
+            \Comment{операция, приводящая к перечитыванию полей}
           \State $b \gets x.f$
         \end{algorithmic}
       \end{algorithm}
@@ -841,9 +842,9 @@
         \begin{algorithmic}[1]
           \State $a \gets \op{new}(\type{Object})$
           \State $b \gets \op{shared}(\M_0)$
-            \Comment получение объекта из разделяемой памяти
+            \Comment{получение объекта из разделяемой памяти}
           \State $\M_1 \gets \op{escape}(\M_0, a)$
-            \Comment утекание объекта в разделяемую память
+            \Comment{утекание объекта в разделяемую память}
         \end{algorithmic}
       \end{algorithm}
 
@@ -872,11 +873,11 @@
           \State $t_0 \gets \op{new}(\type{Object})$
           \State $\M_1 \gets \op{putfield}(\M_0, x, \field{f}, t_0)$
           \State $\M_2 \gets \op{putstatic}(\M_1, \sfield{T}{f}, x)$
-            \Comment утекание $x$ в статическое поле класса
+            \Comment{утекание $x$ в статическое поле класса}
             \label{code:m_var_multithreading:escaping}
           \State $a \gets \op{getfield}(\M_2, x, \field{f})$
           \State $\M_3 \gets \op{reload}(\M_2)$
-            \Comment операция, приводящая к перечитыванию полей
+            \Comment{операция, приводящая к перечитыванию полей}
             \label{code:m_var_multithreading:reload}
           \State $b \gets \op{getfield}(\M_3, x, \field{f})$
         \end{algorithmic}

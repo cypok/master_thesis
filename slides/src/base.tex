@@ -243,7 +243,7 @@
         &x \gets \op{null } \\
         &x \gets \op{getfield}(\M_0, a, \field{f}) \\
         &x \gets \op{getstatic}(\M_0, \sfield{T}{f}) \\
-        &x \gets \op{new}~\type{T} \\
+        &x \gets \op{new}(\type{T}) \\
         &x \gets \op{shared}(\M_0) \\
         &x \gets \op{phi}(a_1, \ldots, a_N) \\
       \end{align*}
@@ -291,13 +291,13 @@
       \begin{block}{Разные источники объектов}
         \begin{algorithmic}[1]
           \State $x \gets \op{new}(\type{T})$
-            \Comment $\pts{x} = \{O_1\}$
+            \Comment{$\pts{x} = \{O_1\}$}
           \State $y \gets \op{new}(\type{T})$
-            \Comment $\pts{y} = \{O_2\}$
+            \Comment{$\pts{y} = \{O_2\}$}
           \State $u \gets \op{getstatic}(\M_0, \sfield{T}{f})$
-            \Comment $\pts{u} = \{O_{global}\}$
+            \Comment{$\pts{u} = \{O_{global}\}$}
           \State $v \gets \op{arg}(1)$
-            \Comment $\pts{v} = \{O_{global}\}$
+            \Comment{$\pts{v} = \{O_{global}\}$}
         \end{algorithmic}
       \end{block}
 
@@ -463,28 +463,28 @@
   \begin{block}{Внутреннее представление}
     \begin{algorithmic}
       \State $\M_0 \gets \op{initialmemory}$
-        \visible<3->{\Comment $\M_0 = \{\Mfield{fields}\colon
+        \visible<3->{\Comment{$\M_0 = \{\Mfield{fields}\colon}
           \{ O_1.\field{f} \colon \emptyset \}\}$}
-      \State $a \gets \op{new}~\type{A}$
-        \visible<2->{\Comment $\pts{a} = \{O_1\}$}
+      \State $a \gets \op{new}(\type{A})$
+        \visible<2->{\Comment{$\pts{a} = \{O_1\}$}}
       \State
-        \State $x_1 \gets \op{new}~\type{A}$
-          \visible<2->{\Comment $\pts{x_1} = \{O_2\}$}
+        \State $x_1 \gets \op{new}(\type{A})$
+          \visible<2->{\Comment{$\pts{x_1} = \{O_2\}$}}
         \State $\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x_1)$
-          \visible<3->{\Comment $\M_1 = \{\Mfield{fields}\colon
+          \visible<3->{\Comment{$\M_1 = \{\Mfield{fields}\colon}
             \{ O_1.\field{f} \colon \{ O_2 \} \}\}$}
       \State
         \State $x_2 \gets \op{arg}(1)$
-          \visible<2->{\Comment $\pts{x_2} = \{O_{global}\}$}
+          \visible<2->{\Comment{$\pts{x_2} = \{O_{global}\}$}}
         \State $\M_2 \gets \op{putfield}(\M_0, a, \field{f}, x_2)$
-          \visible<3->{\Comment $\M_2 = \{\Mfield{fields}\colon
+          \visible<3->{\Comment{$\M_2 = \{\Mfield{fields}\colon}
             \{ O_1.\field{f} \colon \{ O_{global} \} \}\}$}
       \State
       \State $\M_3 \gets \op{phi}(\M_1, \M_2)$
-        \visible<3->{\Comment $\M_3 = \{\Mfield{fields}\colon
+        \visible<3->{\Comment{$\M_3 = \{\Mfield{fields}\colon}
           \{ O_1.\field{f} \colon \{ O_2, O_{global} \} \}\}$}
       \State $y \gets \op{getfield}(\M_3, a, \field{f})$
-        \visible<4->{\Comment $\pts{y} = \{ O_2, O_{global} \}$}
+        \visible<4->{\Comment{$\pts{y} = \{ O_2, O_{global} \}$}}
     \end{algorithmic}
   \end{block}
 
