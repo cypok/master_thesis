@@ -11,6 +11,8 @@
 %\setcounter{tocdepth}{2} % contents depth
 
 \usepackage[english,russian]{babel}
+
+% add biblio to table of contents + correct russian name
 \addto\captionsrussian{
   \let\oldrefname\refname
   \renewcommand\refname{\addcontentsline{toc}{section}{\oldrefname}\oldrefname}
@@ -46,7 +48,7 @@
 
 \usepackage{todonotes}
 \newcommand{\todocite}[1]{%
-  \todo[backgroundcolor=blue!20]{citation?}} 
+  \todo[backgroundcolor=blue!20]{citation?}}
 
 % numbers formating: \num{123456}
 \usepackage{numprint}
