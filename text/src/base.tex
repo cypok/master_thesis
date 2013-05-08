@@ -4,7 +4,6 @@
 % PACKAGES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\usepackage[pdftex,unicode,hidelinks,final]{hyperref}
 \usepackage{ucs}
 \usepackage[utf8x]{inputenc}
 \usepackage[english,russian]{babel}
@@ -34,6 +33,13 @@
 \usepackage[obeyDraft, textwidth=3cm, textsize=footnotesize,
   backgroundcolor=orange!50, linecolor=black!50]{todonotes}
 
+\usepackage{float}
+\newfloat{algorithm}{!htb}{loa}
+
+% should be loaded after float and before algorithm
+% to correctly link algorithms
+\usepackage[pdftex,unicode,hidelinks,final]{hyperref}
+
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \floatname{algorithm}{Пример}
@@ -41,6 +47,9 @@
 \algrenewcommand{\algorithmiccomment}[1]{\hfill \textit{#1}}
 
 \usepackage{multicol}
+
+% should be loaded after hyperref & ams*
+\usepackage[norefs,nocites,msgs]{refcheck}
 
 \usepackage{../../common/cypokcommon}
 
