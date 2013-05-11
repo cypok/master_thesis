@@ -47,9 +47,9 @@
 }
 
 \usepackage{todonotes}
-\newcommand{\todociteref}[1]{[?]\todo[backgroundcolor=blue!20]{#1 needed}}
-\newcommand{\todocite}{\todociteref{citation}}
-\newcommand{\todoref}{\todociteref{reference}}
+\newcommand{\todociteref}[2]{#1\todo[backgroundcolor=blue!20]{#2 needed}}
+\newcommand{\todocite}{\todociteref{[?]}{citation}}
+\newcommand{\todoref}{\todociteref{(?)}{reference}}
 
 % numbers formating: \num{123456}
 \usepackage{numprint}
