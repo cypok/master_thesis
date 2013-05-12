@@ -111,12 +111,23 @@
 % BODY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title{
+\newcommand\thetitle{
   Применение анализа указателей и синонимов
   для оптимизации многопоточных программ
 }
-\author{
+\newcommand\theauthor{
   Владимир Парфиненко
+}
+
+\title{\thetitle}
+\author{\theauthor}
+
+\hypersetup{
+  pdfinfo={
+    Title = {\thetitle},
+    Author = {\theauthor},
+    Subject = {}
+  }
 }
 
 \begin{document}
