@@ -576,19 +576,19 @@
 
     Определим для каждой операции внутреннего представления, порождающей
     значение ссылочного типа, ее формальный тип
-    (см.~таблицу~\ref{tabular:ops_types}). Отдельно стоит обратить внимание на
-    искусственно введенный тип $\type{NullType}$, который совместим по
-    присваиванию с любым другим ссылочным типом.
+    (см.~таблицу~\ref{tabular:ops_types}).
 
     \begin{table}[htb]
       \centering
 
-      \begin{tabular}{|p{0.45\textwidth}|p{0.45\textwidth}|}\hline
+      \begin{tabular}{|p{0.3\textwidth}|p{0.6\textwidth}|}\hline
         \textbf{Операция} &
           \textbf{Формальный тип}\\ \hline
 
         $a \gets \op{null}$
-        & $\type{NullType}$
+        & $\type{NullType}$~--- искусственный тип, совместимый по
+          присваиванию с любым ссылочным типом, что соответствует
+          семантике операции
         \\ \hline
 
         $a \gets \op{phi}(b_1, \ldots, b_N)$
