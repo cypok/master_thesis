@@ -68,6 +68,7 @@
 \newcommand{\java}{\eng{Java}\xspace}
 
 \newcommand{\M}{\ensuremath{\mathbb{M}}}
+\newcommand{\Ms}{\ensuremath{\mathbb{\widebar{M}}}}
 \newcommand{\Mfield}[1]{\ensuremath{\mathrm{#1}}}
 
 \let\mathphi\phi
@@ -719,7 +720,7 @@
     \begin{itemize}
       \item операции $\op{getfield}, \op{getstatic}, \op{shared}$ первым
             аргументом принимают \M"=переменную;
-      \item операции $\op{putfield}, \op{putstatic}, \op{escape}, \op{reload}$
+      \item операции $\op{putfield}, \op{putstatic}, \op{escape}$
             первым аргументом принимают \M"=переменную и в качестве результата
             порождают \M"=переменную.
     \end{itemize}
@@ -732,7 +733,7 @@
     \todo{похвастаться, как M-переменная помогает анализировать поля утекающего
     объекта: до утекания результаты идеальные!}
 
-  \subsection{Абстрактные объекты и \texorpdfstring{\M}{M}"=структура}
+  \subsection{Абстрактные объекты и значение \texorpdfstring{\M}{M}"=переменной}
 
     Определим потоковое свойство, с которым будет работать анализ потока
     данных.
@@ -764,7 +765,45 @@
     определяется типом операции. Тип абстрактного объекта $\AOGlobal$ равен
     искусственному типу, который совместим по присваиванию с любым другим
     ссылочным типом (это необходимо для того, чтобы этот абстрактный объект мог
-    быть целью выражения, имеющего произовальный формальный тип).
+    быть целью выражения, имеющего произвольный формальный тип).
+
+    Теперь рассмотрим более сложную \emph{\Ms"=структуру}, которая служит для
+    выражения состояния памяти, значения \M"=переменной.
+    Эта структура является кортежем из трех множеств:
+    \[ \Ms = (\Mfield{fields}, \Mfield{statics}, \Mfield{shared}). \]
+    Опишем каждое из этих множеств.
+
+    Во-первых, \Ms"=структура содержит информацию о множестве целей полей
+    абстрактных объектов:
+    \[
+      \Ms.\Mfield{fields} \subseteq
+        (AbstractObjects \times InstanceFields) \times
+        \powerset{AbstractObjects},
+    \]
+    где $InstanceFields$~--- это множество идентификаторов полей объектов,
+    присутствующих в анализируемой программе.
+    Аналогично хранится информация о множестве целей статических полей:
+    \[
+      \Ms.\Mfield{statics} \subseteq
+        StaticFields \times \powerset{AbstractObjects},
+    \]
+    где $StaticFields$~--- это множество идентификаторов статических полей,
+    присутствующих в анализируемой программе.
+    Заметим, что эти множества можно рассматривать как
+    отображения:
+    \begin{gather*}
+      \Ms.\Mfield{fields} \colon
+        (AbstractObjects \times InstanceFields) \to
+        \powerset{AbstractObjects}, \\
+      \Ms.\Mfield{statics} \colon
+        StaticFields \to \powerset{AbstractObjects}.
+    \end{gather*}
+
+    Во-вторых, \Ms"=структура содержит информацию о разделяемых объектах,
+    то есть объектах, которые утекли \engdef{escaped} из анализируемого метода
+    и могут быть прочитаны из произвольной разделяемой памяти. Множество
+    разделяемых объектов есть подмножество множества абстрактных объектов:
+    \[ \Ms.\Mfield{shared} \subseteq AbstractObjects. \]
 
     Для решения задачи анализа потока данных зададим полурешетку
     свойств\footnote{
@@ -774,27 +813,47 @@
     \todo{что-нибудь более конкретное чем Мучник? Лично я читал Ахо
     <<Компиляторы>>, но это вроде как учебник, поэтому ссылаюсь на Мучника,
     хоть в нем и менее подробно.}
-    $\Lattice_{AO} = (L, \meet)$, где $L = \powerset{AbstractObjects}$.
-    Оператор $\meet$ определим следующим образом
-    \[\forall x \in L, \forall y \in L \colon x \meet y = x \cup y,\]
-    тогда отношения $\leq$ и $<$ имеют вид:
+    операций, порождающих значение ссылочного типа:
+    $\Lattice^{AO} = (\powerset{AbstractObjects}, \meet^{AO})$.
+    Оператор $\meet^{AO}$ определим следующим образом
+    \[
+      \forall x \subseteq AbstractObjects, \forall y \subseteq AbstractObjects
+      \colon
+      x \meet^{AO} y = x \cup y,
+    \]
+    тогда отношения $\leq^{AO}$ и $<^{AO}$ имеют вид:
     \begin{align*}
-      x \leq y &\Leftrightarrow y \subseteq x, \\
-      x < y &\Leftrightarrow y \subset x.
+      x \leq^{AO} y &\Leftrightarrow y \subseteq x, \\
+      x <^{AO} y &\Leftrightarrow y \subset x.
     \end{align*}
-    Соответственно нижний элемент $\bot = AbstractObjects$
-    и верхний элемент $\top = \emptyset$.
+    Соответственно нижний элемент $\bot^{AO} = AbstractObjects$
+    и верхний элемент $\top^{AO} = \emptyset$.
 
     Заметим, что мощность множества абстрактных объектов для любого
     метода конечна и равна $M + 1$,
     где $M$~--- количество операций создания новых объектов, которое ограничено
     размером анализируемого метода.
 
-    Из этого следует конечность множества значений свойств полурешетки,
-    что дает конечную высоту полурешетки и гарантирует обрывание всех строго
-    убывающих цепей.
+    Из этого следует конечность множества значений свойств полурешетки
+    $\Lattice^{AO}$, что дает конечную высоту полурешетки и гарантирует
+    обрывание всех строго убывающих цепей.
 
-    \todo{вот здесь нужно описать \M"=структуру}
+    Заметим, что множества $InstanceFields$ и $StaticFields$ фиксированы и
+    конечны в рамках одного метода.
+    Тогда \Ms"=структуру можно представить как кортеж подмножеств множества
+    абстрактных объектов.
+    Это позволяет определить полурешетку свойств операций, порождающих
+    \M"=переменную:
+    \[ \Lattice^M = (MemStructs, \meet^M) =
+      \Lattice^{AO} \times \ldots \times \Lattice^{AO},\]
+    где $MemStructs$~--- множество всех \Ms"=структур.
+
+    Теперь можно определить общую полурешетку свойств для всех операций
+    внутреннего представления: $\Lattice = \Lattice^{AO} \times \Lattice^M$.
+
+    Из конечной высоты полурешетки $\Lattice^{AO}$
+    и обрывания в ней всех строго убывающих цепей следуют аналогичные свойства
+    для решетки $\Lattice^M$ и, соответственно, для решетки $\Lattice$.
 
   \subsection{Анализ потоков данных}
 
@@ -839,16 +898,16 @@
     Опишем такую структуру, соответствующую \M"=переменной. Во-первых, она
     содержит информацию о множестве целей полей объектов:
     \[ \M.\Mfield{fields}\colon
-      AbstractObjects \times InstanceFieldDescs \to
+      AbstractObjects \times InstanceFields \to
       \powerset{AbstractObjects},
     \]
-    где $InstanceFieldDescs$~--- это множество идентификаторов полей
-    объектов.  Аналогично хранится информация о множестве целей статических
+    где $InstanceFields$~--- это множество идентификаторов полей
+    объектов. Аналогично хранится информация о множестве целей статических
     полей:
     \[ \M.\Mfield{statics}\colon
-      StaticFieldDescs \to \powerset{AbstractObjects},
+      StaticFields \to \powerset{AbstractObjects},
     \]
-    где $StaticFieldDescs$~--- это множество идентификаторов
+    где $StaticFields$~--- это множество идентификаторов
     статических полей.
 
     Заметим, что, во-первых, эти отображения можно рассматривать как
@@ -900,7 +959,7 @@
       &\mathcal{TC}_\M^0(set) = set; \\
       &\mathcal{TC}_\M^{i+1}(set) = \mathcal{TC}_\M^i(set) \cup
         \smashoperator{\bigcup_{\substack{O \in \mathcal{TC}_\M^i(set)\\
-                           f \in InstanceFieldDescs}}}
+                           f \in InstanceFields}}}
           \M.\Mfield{fields}(O, f); \\
       &\mathcal{TC}_\M(set) =
         \bigcup_{i \in \mathbb{N}} \mathcal{TC}_\M^i(set).
