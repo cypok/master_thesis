@@ -89,6 +89,8 @@
 \newcommand{\AO}[1]{O_{#1}}
 \newcommand{\AOGlobal}{\AO{global}}
 
+\newcommand{\TClosure}{\mathcal{TC}}
+
 \newcommand{\Lattice}{\mathcal{L}}
 \newcommand{\meet}{\wedge}
 
@@ -794,29 +796,28 @@
     разделяемых объектов есть подмножество множества абстрактных объектов:
     \[ \Ms.\Mfield{shared} \subseteq AbstractObjects. \]
 
-    Для решения задачи анализа потока данных зададим полурешетку
-    свойств\footnote{
+    Для решения задачи анализа потока данных зададим полурешетку\footnote{
       Полурешетки и их свойства подробно описаны в монографии
       Мучника~\cite{muchnick}.
     }
     \todo{
     что-нибудь более конкретное чем Мучник? Ахо? Нильсон?
     }
-    операций, порождающих значение ссылочного типа:
-    $\Lattice^{AO} = (\powerset{AbstractObjects}, \meet^{AO})$.
-    Оператор $\meet^{AO}$ определим следующим образом
+    множеств целей выражений ссылочного типа \engdef{point-to set}:
+    \[ \Lattice^{PTS} = (\powerset{AbstractObjects}, \meet^{PTS}).\]
+    Оператор $\meet^{PTS}$ определим следующим образом
     \[
       \forall x \subseteq AbstractObjects, \forall y \subseteq AbstractObjects
       \colon
-      x \meet^{AO} y = x \cup y,
+      x \meet^{PTS} y = x \cup y,
     \]
-    тогда отношения $\leq^{AO}$ и $<^{AO}$ имеют вид:
+    тогда отношения $\leq^{PTS}$ и $<^{PTS}$ имеют вид:
     \begin{align*}
-      x \leq^{AO} y &\Leftrightarrow y \subseteq x, \\
-      x <^{AO} y &\Leftrightarrow y \subset x.
+      x \leq^{PTS} y &\Leftrightarrow y \subseteq x, \\
+      x <^{PTS} y &\Leftrightarrow y \subset x.
     \end{align*}
-    Соответственно нижний элемент $\bot^{AO} = AbstractObjects$
-    и верхний элемент $\top^{AO} = \emptyset$.
+    Соответственно нижний элемент $\bot^{PTS} = AbstractObjects$
+    и верхний элемент $\top^{PTS} = \emptyset$.
 
     Заметим, что мощность множества абстрактных объектов для любого
     метода конечна и равна $M + 1$,
@@ -824,7 +825,7 @@
     размером анализируемого метода.
 
     Из этого следует конечность множества значений свойств полурешетки
-    $\Lattice^{AO}$, что дает конечную высоту полурешетки и гарантирует
+    $\Lattice^{PTS}$, что дает конечную высоту полурешетки и гарантирует
     обрывание всех строго убывающих цепей.
 
     Заметим, что множества $InstanceFields$ и $StaticFields$ фиксированы и
@@ -832,16 +833,16 @@
     Тогда \Ms"=структуру можно представить как конечный кортеж подмножеств
     множества абстрактных объектов.
     Это позволяет определить полурешетку свойств операций, порождающих
-    \M"=переменную, как конечное произведение полурешеток $\Lattice^{AO}$:
+    \M"=переменную, как конечное произведение полурешеток $\Lattice^{PTS}$:
     \[\Lattice^M = (MemStructs, \meet^M) =
-      \Lattice^{AO} \times \ldots \times \Lattice^{AO},\]
+      \Lattice^{PTS} \times \ldots \times \Lattice^{PTS},\]
     где $MemStructs$~--- множество всех \Ms"=структур.
 
     Теперь можно определить общую полурешетку свойств для всех операций
     внутреннего представления:
-    \[ \Lattice = (L, \meet) = \Lattice^{AO} \times \Lattice^M. \]
+    \[ \Lattice = (L, \meet) = \Lattice^{PTS} \times \Lattice^M. \]
 
-    Из конечной высоты полурешетки $\Lattice^{AO}$
+    Из конечной высоты полурешетки $\Lattice^{PTS}$
     и обрывания в ней всех строго убывающих цепей следуют аналогичные свойства
     для решетки $\Lattice^M$ и, соответственно, для решетки $\Lattice$.
 
@@ -862,7 +863,7 @@
     \end{itemize}
 
     Выделим в этом графе множество \emph{входных} вершин,
-    \[ V_{entry} = \{ v | v \in V, \lnot \exists u\colon (u, v) \in E \}. \]
+    \[ V_{entry} = \{ v \mid v \in V, \lnot \exists u\colon (u, v) \in E \}. \]
     То есть это множество образуют операции, которые не зависят от других по
     данным.
 
@@ -929,100 +930,64 @@
   \subsection{Семантика операций}
     \label{section:flow_functions}
 
-    \todo{это надо переписать}
+    В этом разделе описана семантика всех операций, представленных ранее, в
+    терминах анализа потока данных.
 
-    Ключевыми понятиями анализа являются абстрактные объекты и их множества.
-    Абстрактные объекты будем обозначать буквой $O$; множество целей, на
-    которые может указывать переменная $x$, будем обозначать $\pts{x}$.
+    Все операции внутреннего представления имеют только один результат:
+    значение ссылочного типа или \M"=переменную. Поэтому одна компонента
+    потокового свойства всегда будет равна нижнему элементу:
+    \begin{itemize}
+      \item $(\pts{x}, \bot^M) \in L, \pts{x} \in L^{PTS}$ для операции,
+            возвращающей значение ссылочного типа $x$;
+      \item $(\bot^M, \Ms_i) \in L, \Ms_i \in L^M$ для операции, порождающей
+            \M"=переменную $\M_i$.
+    \end{itemize}
 
-    $AbstractObjects$~--- это множество всех абстрактных объектов. Оно
-    состоит из уникальных объектов, соответствующих операциям создания
-    объекта, и одного специального объекта $\AOGlobal$, который олицетворяет
-    все объекты, созданные вне анализируемого метода.
-
-    Для хранения результатов анализа вспомогательное внутреннее представление
-    содержит информацию о множестве целей всех переменных ссылочного
-    типа и информацию о состояниях памяти в виде структур, соответствующих
-    версиям \M"=переменной.
-
-    Опишем такую структуру, соответствующую \M"=переменной. Во-первых, она
-    содержит информацию о множестве целей полей объектов:
-    \[ \M.\Mfield{fields}\colon
-      AbstractObjects \times InstanceFields \to
-      \powerset{AbstractObjects},
-    \]
-    где $InstanceFields$~--- это множество идентификаторов полей
-    объектов. Аналогично хранится информация о множестве целей статических
-    полей:
-    \[ \M.\Mfield{statics}\colon
-      StaticFields \to \powerset{AbstractObjects},
-    \]
-    где $StaticFields$~--- это множество идентификаторов
-    статических полей.
-
-    Заметим, что, во-первых, эти отображения можно рассматривать как
-    множества.  А во-вторых, эти отображения будут иметь умолчательное
-    значение: если у нас не определено отображение для некоторого значения,
-    то образ этого значения есть пустое множество.\todo{Мысль понятна, как
-    переформулировать?}
-
-    Во-вторых, \M"=переменная должна содержать информацию о разделяемых
-    объектах и об объектах, которые утекут \engdef{escape} из метода и станут
-    разделяемыми. Для представления этой информации хранится два множества
-    объектов: объекты (\eng{shared}), которые утекли из метода и уже являются
-    разделяемыми (консервативно предполагается, что эти объекты могут быть
-    прочитаны из любой разделяемой памяти), и объекты (\eng{escaped}),
-    которые утекли, но еще не являются разделяемыми.
-    \[ \M.\Mfield{shared} \in \powerset{AbstractObjects}; \]
-    \[ \M.\Mfield{escaped} \in \powerset{AbstractObjects}. \]
-
-    Теперь опишем все операции, которые используются во вспомогательном
-    внутреннем представлении.
-
-    Исходное значение \M"=переменной  содержит пустые множества
-    \Mfield{fields} и \Mfield{statics}, множество \Mfield{escaped} изначально
-    также является пустым. Однако множество \Mfield{shared} содержит
-    специальный объект
-    $\AOGlobal$.
-    \[\M \gets \op{initialmemory }\Rightarrow \]
+    Начальное значение \M"=переменной содержит пустые множества целей в
+    множествах \Mfield{fields} и \Mfield{statics}. Множество \Mfield{shared}
+    содержит единственный объект $\AOGlobal$.
+    \[\M \gets \op{initialmemory} \colon \]
     \[\begin{split}
-      \M = \{ &\Mfield{fields} = \emptyset, \Mfield{statics} = \emptyset, \\
-      &\Mfield{escaped} = \emptyset,
-      \Mfield{shared} = \{\AOGlobal\}
-    \}.
+      \Ms = \bigl(
+          &\Mfield{fields} = \{ (O, f, \emptyset) \mid
+              O \in AbstractObjects, f \in InstanceFields \}, \\
+          &\Mfield{statics} = \{ (f, \emptyset) \mid
+              f \in StaticFields \}, \\
+          &\Mfield{shared} = \{\AOGlobal\} \bigr).
     \end{split}\]
 
-    Утекание объектов моделируется операцией, которая добавляет данные
-    объекты в множество \Mfield{escaped}, причем при добавлении в множество
-    \Mfield{escaped} какого-либо объекта, добавляются в множество еще и все
-    объекты, доступные через поля этого объекта.
-    \[ \M' \gets \op{escape}(\M, a_1, \ldots, a_N) \Rightarrow \]
-    \[\begin{split}
-      \M' = \M, \text{кроме } \M'.\Mfield{escaped} =
-        \M.\Mfield{escaped} \cup
-        \mathcal{TC}_\M(\pts{a_1} \cup \ldots \cup \pts{a_N}),
-    \end{split}\]
-    где $\mathcal{TC}_\M(set)$~--- это транзитивное замыкание множества
-    объектов и множеств целей их полей \engdef{transitive closure}.
-    $\mathcal{TC}_\M(set)$ может быть вычислено следующим образом:
-    \[\left\{\begin{aligned}
-      &\mathcal{TC}_\M^0(set) = set; \\
-      &\mathcal{TC}_\M^{i+1}(set) = \mathcal{TC}_\M^i(set) \cup
-        \smashoperator{\bigcup_{\substack{O \in \mathcal{TC}_\M^i(set)\\
-                           f \in InstanceFields}}}
-          \M.\Mfield{fields}(O, f); \\
-      &\mathcal{TC}_\M(set) =
-        \bigcup_{i \in \mathbb{N}} \mathcal{TC}_\M^i(set).
-    \end{aligned}\right.\]
-
-    Специальное значение null соответствует пустому множеству целей
-    переменной ссылочного типа:
-    \[ x \gets \op{null }\Rightarrow
+    Значение нулевого указателя соответствует пустому множеству целей:
+    \[ x \gets \op{null} \colon
        \pts{x} = \emptyset. \]
 
     Создание нового объекта порождает уникальный абстрактный объект:
-    \[ x \gets \op{new}(\type{T}) \Rightarrow
+    \[ x \gets \op{new}[\type{T}] \colon
        \pts{x} = \{O_i\}. \]
+
+    Утекание объектов в разделяемую память моделируется операцией, которая
+    добавляет данные объекты в множество \Mfield{shared}. Причем здесь и далее
+    при добавлении в множество \Mfield{shared} какого-либо объекта, добавляются
+    так же и все объекты, доступные через его поля.
+    \[ \M' \gets \op{escape}(\M, a_1, \ldots, a_N) \colon \]
+    \[\begin{split}
+      \Ms' = \bigl(
+          &\Mfield{fields} = \Ms.\Mfield{fields}, \\
+          &\Mfield{statics} = \Ms.\Mfield{statics}, \\
+          &\Mfield{shared} = \Ms.\Mfield{shared} \cup
+        \TClosure_\Ms(\pts{a_1} \cup \ldots \cup \pts{a_N}) \bigr),
+    \end{split}\]
+    где $\TClosure_\Ms(set)$~--- это транзитивное замыкание множества
+    объектов и множеств целей их полей \engdef{transitive closure}.
+    $\TClosure_\M(set)$ может быть вычислено следующим образом:
+    \[\left\{\begin{aligned}
+      &\TClosure_\M^0(set) = set; \\
+      &\TClosure_\M^{i+1}(set) = \TClosure_\M^i(set) \cup
+        \smashoperator{\bigcup_{\substack{O \in \TClosure_\M^i(set)\\
+                           f \in InstanceFields}}}
+          \M.\Mfield{fields}(O, f); \\
+      &\TClosure_\M(set) =
+        \bigcup_{i \in \mathbb{N}} \TClosure_\M^i(set).
+    \end{aligned}\right.\]
 
     Чтение разделяемого объекта использует множество разделяемых объектов из
     \M"=переменной:
@@ -1045,7 +1010,7 @@
       \M' = \M, \text{кроме }
         &\M'.\Mfield{statics}(\sfield{T}{f}) = \pts{x}, \\
         &\M'.\Mfield{escaped} = \M.\Mfield{escaped} \cup
-        \mathcal{TC}_\M(\pts{x}).
+        \TClosure_\M(\pts{x}).
     \end{split}\]
     Заметим, что в этом случае мы выполняем строгое присваивание, то есть мы
     не расширяем множество $\Mfield{statics}(\sfield{T}{f})$, а именно
@@ -1087,7 +1052,7 @@
             &\cup
             \begin{cases}
               \M.\Mfield{fields}(O, \field{f}), & \text{если }
-                |\pts{a}| > 1 \vee \pts{a} = \{\AOGlobal\};\\
+                \lvert\pts{a}\rvert > 1 \text{ или } \pts{a} = \{\AOGlobal\};\\
               \emptyset, & \text{иначе},
             \end{cases}
         \end{split} \\
@@ -1095,7 +1060,7 @@
           \M'.&\Mfield{escaped} = \M.\Mfield{escaped}\ \cup \\
           &\cup
             \begin{cases}
-              \mathcal{TC}_\M(\pts{x}), & \text{если }
+              \TClosure_\M(\pts{x}), & \text{если }
                 \pts{a} \cap (\M.\Mfield{shared} \cup
                   \M.\Mfield{escaped}) \ne \emptyset;\\
               \emptyset, & \text{иначе}.
