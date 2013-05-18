@@ -1,8 +1,9 @@
 #!/bin/sh
-# Post-{commit,checkout,merge} hook for generation git information
+# Post-{commit,checkout,merge} hook for generation of git info.
+# Copy it to .git/hooks/post-{commit,checkout,merge}.
 #
 git log -1 HEAD --date=iso --pretty=format:"
-%% This is file is generated after git commit, checkout or merge.
+%% This file is generated after git commit, checkout or merge.
 %% Do not edit it!
 \newcommand{\GitAbbrHash}{%h}
 \newcommand{\GitDate}{%ad}
