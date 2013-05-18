@@ -72,23 +72,21 @@
 
 \newcommand{\M}{\ensuremath{\mathbb{M}}}
 \newcommand{\Ms}{\ensuremath{\mathbb{\widebar{M}}}}
-\newcommand{\Mfield}[1]{\ensuremath{\mathrm{#1}}}
+\newcommand{\Mf}[1]{\ensuremath{\mathrm{#1}}}
 
 \let\mathphi\phi
 \renewcommand{\phi}{\ensuremath{\mathphi}}
 
 \newcommand{\type}[1]{\mathrm{#1}}
 \newcommand{\field}[1]{\mathrm{#1}}
-\newcommand{\sfield}[2]{\type{#1}.\field{#2}}
-\newcommand{\method}[1]{\mathrm{#1}}
-\newcommand{\smethod}[2]{\type{#1}.\method{#2}}
 
 \newcommand{\op}[1]{\mathbf{#1}}
 
 \newcommand{\pts}[1]{\widebar{#1}}
 
-\newcommand{\AO}[1]{O_{#1}}
-\newcommand{\AOGlobal}{\AO{global}}
+\newcommand{\AOTyped}[1]{O^{\type{#1}}}
+\newcommand{\AO}{O}
+\newcommand{\AOGlobal}{\AO_{global}}
 
 \newcommand{\TClosure}{\mathcal{TC}}
 
@@ -508,7 +506,8 @@
         \textbf{\java операция} &
           \textbf{Внутреннее представление}\\ \hline
 
-        получение формального параметра ссылочного типа
+        получение формального параметра ссылочного типа или
+        чтение статического поля
         & $a \gets \op{shared}$
         \\ \hline
 
@@ -528,16 +527,12 @@
         & $a \gets \op{getfield}[\field{f}](a)$
         \\ \hline
 
-        чтение статического поля ссылочного типа $\sfield{T}{f}$
-        & $a \gets \op{getstatic}[\sfield{T}{f}]$
-        \\ \hline
-
         запись в поле $\field{f}$ объекта $a$ значения ссылочного типа $b$
         & $\op{putfield}[\field{f}](a, b)$
         \\ \hline
 
-        запись в статическое поле $\sfield{T}{f}$ значения ссылочного типа $b$
-        & $\op{putstatic}[\sfield{T}{f}](b)$
+        запись в статическое поле значения ссылочного типа $a$
+        & $\op{escape}(a)$
         \\ \hline
 
       \end{tabular}
@@ -551,9 +546,11 @@
 
     Вызов метода с параметрами ссылочного типа $p_1, \ldots, p_N$, возвращающего
     значение ссылочного типа $a$ (параметры и возвращаемое значение могут
-    отсутствовать) интерпретируется как пара операций:
+    отсутствовать) интерпретируется как набор операций:
     \begin{gather*}
-      \op{escape}(p_1, \ldots, p_N), \\
+      \op{escape}(p_1), \\
+      \ldots, \\
+      \op{escape}(p_N), \\
       a \gets \op{shared}.
     \end{gather*}
 
@@ -595,10 +592,6 @@
         & тип поля $\field{f}$
         \\ \hline
 
-        $a \gets \op{getstatic}[\sfield{T}{f}]$
-        & тип поля $\sfield{T}{f}$
-        \\ \hline
-
       \end{tabular}
       \caption{Формальные типы операций внутреннего представления}
       \label{tabular:ops_types}
@@ -609,7 +602,8 @@
     Добавим константный параметр, определяющий формальный тип:
     \[a \gets \op{shared}[\type{T}],\]
     где $\type{T}$~--- тип параметра, если операция соответствует
-    получению формального параметра метода, или тип возвращаемого значения,
+    получению формального параметра метода, тип поля, если операция
+    соотвествует чтению статического поля, или тип возвращаемого значения,
     если операция соответствует вызову.
 
     Рассмотрим еще одну операцию языка \java, операцию преобразования типа. При
@@ -709,9 +703,9 @@
     внутреннего представления, описанных в разделе~\ref{section:ir_ops},
     следующим образом:
     \begin{itemize}
-      \item операции $\op{getfield}, \op{getstatic}, \op{shared}$ первым
+      \item операции $\op{getfield}, \op{shared}$ первым
             аргументом принимают \M"=переменную;
-      \item операции $\op{putfield}, \op{putstatic}, \op{escape}$
+      \item операции $\op{putfield}, \op{escape}$
             первым аргументом принимают \M"=переменную и в качестве результата
             порождают \M"=переменную.
     \end{itemize}
@@ -730,9 +724,9 @@
 
     Определим множество \emph{абстрактных объектов}, которые являются
     целями указателей при проведении анализа.
-    Такие объекты будем обозначать как $\AO{idx} \in AbstractObjects$;
+    Такие объекты будем обозначать как $\AO_{idx} \in AbsObjects$;
     множество целей, на которые может указывать переменная ссылочного типа $x$,
-    будем обозначать $\pts{x} \subseteq AbstractObjects$.
+    будем обозначать $\pts{x} \subseteq AbsObjects$.
 
     Основным свойством абстрактных объектов является то, что два различных
     абстрактных объекта символизируют разные объекты в памяти при исполнении
@@ -755,58 +749,47 @@
     определяется типом операции. Тип абстрактного объекта $\AOGlobal$ равен
     искусственному типу, который совместим по присваиванию с любым другим
     ссылочным типом (это необходимо для того, чтобы этот абстрактный объект мог
-    быть целью выражения, имеющего произвольный формальный тип).
+    быть целью выражения, имеющего произвольный формальный тип). Абстрактный
+    объект типа $\type{T}$ будем обозначать $\AOTyped{T}$.
 
     Теперь рассмотрим более сложную \emph{\Ms"=структуру}, которая служит для
     выражения состояния памяти, значения \M"=переменной.
-    Эта структура является кортежем из трех множеств:
-    \[ \Ms = (\Mfield{fields}, \Mfield{statics}, \Mfield{shared}). \]
+    Эта структура является кортежем из двух множеств:
+    \[ \Ms = (\Mf{fields}, \Mf{shared}). \]
     Опишем каждое из этих множеств.
 
     Во-первых, \Ms"=структура содержит информацию о множестве целей полей
     абстрактных объектов:
     \[
-      \Ms.\Mfield{fields} \subseteq
-        (AbstractObjects \times InstanceFields) \times
-        \powerset{AbstractObjects},
+      \Ms.\Mf{fields} \subseteq
+        (AbsObjects \times Fields) \times
+        \powerset{AbsObjects},
     \]
-    где $InstanceFields$~--- это множество идентификаторов полей объектов,
+    где $Fields$~--- это множество идентификаторов полей объектов,
     присутствующих в анализируемой программе.
-    Аналогично хранится информация о множестве целей статических полей:
+    Заметим, что это множество можно рассматривать как отображение:
     \[
-      \Ms.\Mfield{statics} \subseteq
-        StaticFields \times \powerset{AbstractObjects},
+      \Ms.\Mf{fields} \colon
+        (AbsObjects \times Fields) \to
+        \powerset{AbsObjects}.
     \]
-    где $StaticFields$~--- это множество идентификаторов статических полей,
-    присутствующих в анализируемой программе.
-    Заметим, что эти множества можно рассматривать как
-    отображения:
-    \begin{gather*}
-      \Ms.\Mfield{fields} \colon
-        (AbstractObjects \times InstanceFields) \to
-        \powerset{AbstractObjects}, \\
-      \Ms.\Mfield{statics} \colon
-        StaticFields \to \powerset{AbstractObjects}.
-    \end{gather*}
 
     Во-вторых, \Ms"=структура содержит информацию о разделяемых объектах,
     то есть объектах, которые утекли \engdef{escaped} из анализируемого метода
     и могут быть прочитаны из произвольной разделяемой памяти. Множество
     разделяемых объектов есть подмножество множества абстрактных объектов:
-    \[ \Ms.\Mfield{shared} \subseteq AbstractObjects. \]
+    \[ \Ms.\Mf{shared} \subseteq AbsObjects. \]
 
     Для решения задачи анализа потока данных зададим полурешетку\footnote{
       Полурешетки и их свойства подробно описаны в монографии
       Мучника~\cite{muchnick}.
     }
-    \todo{
-    что-нибудь более конкретное чем Мучник? Ахо? Нильсон?
-    }
+    \todo{что-нибудь более конкретное чем Мучник? Ахо? Нильсон?}
     множеств целей выражений ссылочного типа \engdef{point-to set}:
-    \[ \Lattice^{PTS} = (\powerset{AbstractObjects}, \meet^{PTS}).\]
+    \[ \Lattice^{PTS} = (\powerset{AbsObjects}, \meet^{PTS}).\]
     Оператор $\meet^{PTS}$ определим следующим образом
     \[
-      \forall x \subseteq AbstractObjects, \forall y \subseteq AbstractObjects
+      \forall x \subseteq AbsObjects, \forall y \subseteq AbsObjects
       \colon
       x \meet^{PTS} y = x \cup y,
     \]
@@ -815,7 +798,7 @@
       x \leq^{PTS} y &\Leftrightarrow y \subseteq x, \\
       x <^{PTS} y &\Leftrightarrow y \subset x.
     \end{align*}
-    Соответственно нижний элемент $\bot^{PTS} = AbstractObjects$
+    Соответственно нижний элемент $\bot^{PTS} = AbsObjects$
     и верхний элемент $\top^{PTS} = \emptyset$.
 
     Заметим, что мощность множества абстрактных объектов для любого
@@ -827,8 +810,8 @@
     $\Lattice^{PTS}$, что дает конечную высоту полурешетки и гарантирует
     обрывание всех строго убывающих цепей.
 
-    Заметим, что множества $InstanceFields$ и $StaticFields$ фиксированы и
-    конечны в рамках одного метод.
+    Заметим, что множество $Fields$ также фиксировано и конечно в
+    рамках одного метод.
     Тогда \Ms"=структуру можно представить как конечный кортеж подмножеств
     множества абстрактных объектов.
     Это позволяет определить полурешетку свойств операций, порождающих
@@ -883,7 +866,7 @@
     \begin{gather*}
       \forall i\colon 1 \leq i \leq N,
       \forall x_1, \ldots, x_{i-1}, x_{i+1}, \ldots, x_N, y, z \in L \colon \\
-        f(x_1, \ldots, x_{i-1}, y \meet z, x_{i+1}, \ldots, x_N) \leq \\
+        f(x_1, \ldots, x_{i-1}, y \meet z, x_{i+1}, \ldots, x_N) \leq{} \\
         \leq
         f(x_1, \ldots, x_{i-1}, y,         x_{i+1}, \ldots, x_N) \meet
         f(x_1, \ldots, x_{i-1}, z,         x_{i+1}, \ldots, x_N).
@@ -942,197 +925,147 @@
             \M"=переменную $\M_i$.
     \end{itemize}
 
-    Начальное значение \M"=переменной содержит пустые множества целей в
-    множествах \Mfield{fields} и \Mfield{statics}. Множество \Mfield{shared}
-    содержит единственный объект $\AOGlobal$.
-    \[\M \gets \op{initialmemory} \colon \]
-    \[\begin{split}
-      \Ms = \bigl(
-          &\Mfield{fields} = \{ (O, f, \emptyset) \mid
-              O \in AbstractObjects, f \in InstanceFields \}, \\
-          &\Mfield{statics} = \{ (f, \emptyset) \mid
-              f \in StaticFields \}, \\
-          &\Mfield{shared} = \{\AOGlobal\} \bigr).
-    \end{split}\]
-
-    Значение нулевого указателя соответствует пустому множеству целей:
-    \[ x \gets \op{null} \colon
-       \pts{x} = \emptyset. \]
-
-    Создание нового объекта порождает уникальный абстрактный объект:
-    \[ x \gets \op{new}[\type{T}] \colon
-       \pts{x} = \{O_i\}. \]
-
-    Утекание объектов в разделяемую память моделируется операцией, которая
-    добавляет данные объекты в множество \Mfield{shared}. Причем здесь и далее
-    при добавлении в множество \Mfield{shared} какого-либо объекта, добавляются
-    так же и все объекты, доступные через его поля.
-    \[ \M' \gets \op{escape}(\M, a_1, \ldots, a_N) \colon \]
-    \[\begin{split}
-      \Ms' = \bigl(
-          &\Mfield{fields} = \Ms.\Mfield{fields}, \\
-          &\Mfield{statics} = \Ms.\Mfield{statics}, \\
-          &\Mfield{shared} = \Ms.\Mfield{shared} \cup
-        \TClosure_\Ms(\pts{a_1} \cup \ldots \cup \pts{a_N}) \bigr),
-    \end{split}\]
-    где $\TClosure_\Ms(set)$~--- это транзитивное замыкание множества
-    объектов и множеств целей их полей \engdef{transitive closure}.
-    $\TClosure_\M(set)$ может быть вычислено следующим образом:
-    \[\left\{\begin{aligned}
-      &\TClosure_\M^0(set) = set; \\
-      &\TClosure_\M^{i+1}(set) = \TClosure_\M^i(set) \cup
-        \smashoperator{\bigcup_{\substack{O \in \TClosure_\M^i(set)\\
-                           f \in InstanceFields}}}
-          \M.\Mfield{fields}(O, f); \\
-      &\TClosure_\M(set) =
-        \bigcup_{i \in \mathbb{N}} \TClosure_\M^i(set).
-    \end{aligned}\right.\]
-
-    Чтение разделяемого объекта использует множество разделяемых объектов из
-    \M"=переменной:
-    \[ x \gets \op{shared}(\M) \Rightarrow
-       \pts{x} = \M.\Mfield{shared}. \]
-
-    Чтение статического поля возвращает множество всех разделяемых объектов в
-    объединении с объектами, записанными непосредственно в это поле:
-    \[ x \gets \op{getstatic}(\M, \sfield{T}{f}) \Rightarrow \]
+    Значение нулевого указателя соответствует пустому множеству целей
+    выражения:
     \[
-      \pts{x} = \M.\Mfield{shared} \cup \M.\Mfield{statics}(\sfield{T}{f}).
+      x \gets \op{null} \colon \quad
+      \pts{x} = \emptyset.
     \]
 
-    Запись в статическое поле $\sfield{T}{f}$ имеет более сложную семантику.
-    Помимо изменения значения $\Mfield{statics}(\sfield{T}{f})$, записываемые
-    объекты утекают, то есть добавляются в множество
-    $\Mfield{escaped}$:
-    \[ \M' \gets \op{putstatic}(\M, \sfield{T}{f}, x) \Rightarrow \]
-    \[\begin{split}
-      \M' = \M, \text{кроме }
-        &\M'.\Mfield{statics}(\sfield{T}{f}) = \pts{x}, \\
-        &\M'.\Mfield{escaped} = \M.\Mfield{escaped} \cup
-        \TClosure_\M(\pts{x}).
-    \end{split}\]
-    Заметим, что в этом случае мы выполняем строгое присваивание, то есть мы
-    не расширяем множество $\Mfield{statics}(\sfield{T}{f})$, а именно
-    заменяем его новым множеством целей.
+    Создание нового объекта порождает множество из одного уникального
+    абстрактного объекта:
+    \[
+      x \gets \op{new}[\type{T}] \colon \quad
+      \pts{x} = \{\AO_i\}.
+    \]
+
+    Начальное значение \M"=переменной содержит пустые множества целей в
+    множестве \Mf{fields}. Множество \Mf{shared}
+    содержит единственный объект $\AOGlobal$.
+    \begin{gather*}
+      \M \gets \op{initialmemory} \colon \\
+      \begin{aligned}
+        &\Ms.\Mf{fields} = \{ (\AO, f, \emptyset) \mid
+          \AO \in AbsObjects, f \in Fields \}, \\
+        &\Ms.\Mf{shared} = \{\AOGlobal\}.
+      \end{aligned}
+    \end{gather*}
+
+    Утекание объектов в разделяемую память моделируется операцией, которая
+    добавляет данный объект в множество \Mf{shared}. Причем здесь и далее
+    при добавлении в множество \Mf{shared} какого-либо объекта, добавляются
+    так же и все объекты, доступные через его поля.
+    \begin{gather*}
+      \M' \gets \op{escape}(\M, a) \colon \\
+      \begin{aligned}
+        &\Ms'.\Mf{fields} = \Ms.\Mf{fields}, \\
+        &\Ms'.\Mf{shared} = \Ms.\Mf{shared} \cup \TClosure_\Ms(\pts{a}),
+      \end{aligned}
+    \end{gather*}
+    где $\TClosure_\Ms(set)$~--- это транзитивное замыкание \engdef{transitive
+    closure} множества объектов и множеств целей их полей.
+    $\TClosure_\M(set)$ может быть вычислено следующим образом:
+    \[\left\{\begin{aligned}
+      &\TClosure_\Ms^0(set) = set; \\
+      &\TClosure_\Ms^{i+1}(set) = \TClosure_\Ms^i(set) \cup
+        \smashoperator{\bigcup_{\substack{\AO \in \TClosure_\Ms^i(set)\\
+                           f \in Fields}}}
+          \Ms.\Mf{fields}(\AO, f); \\
+      &\TClosure_\Ms(set) =
+        \bigcup_{i \in \mathbb{N}} \TClosure_\Ms^i(set).
+    \end{aligned}\right.\]
+
+    Результат чтения из разделяемой памяти есть множество разделяемых объектов
+    из \M"=переменной, отфильтрованных по типу:
+    \[ x \gets \op{shared}[\type{T}](\M) \colon
+       \pts{x} = \{ \AO^{\type{T'}} \mid
+         \AO^{\type{T'}} \in \Ms.\Mf{shared} \text{ и }
+         \type{T} \leq \type{T'} \}. \]
 
     Чтение поля из переменной $a$ возвращает множество объектов, записанных
     непосредственно в это поле. Однако, если переменная $a$ может указывать
-    хоть на один разделяемый объект, то возвращаемое множество расширяется
+    хотя бы на один разделяемый объект, то возвращаемое множество расширяется
     всеми разделяемыми объектами:
-    \[ x \gets \op{getfield}(\M, a, \field{f}) \Rightarrow \]
-    \[
-      \pts{x} = \left( \bigcup_{O \in \pts{a}} \M.\Mfield{fields}(O,
+    \begin{gather*}
+      x \gets \op{getfield}(\M, a, \field{f}) \colon \\
+      \pts{x} = \left( \bigcup_{\AO \in \pts{a}} \Ms.\Mf{fields}(\AO,
       \field{f}) \right) \cup
       \begin{cases}
-        \M.\Mfield{shared}, & \text{если } \pts{a} \cap
-          \M.\Mfield{shared} \ne \emptyset; \\
+        \Ms.\Mf{shared}, & \text{если } \pts{a} \cap
+          \Ms.\Mf{shared} \ne \emptyset; \\
         \emptyset, & \text{иначе}.
       \end{cases}
-    \]
+    \end{gather*}
 
     Запись в поле $\field{f}$ переменной $a$ модифицирует значение памяти,
-    расширяя множество целей $\Mfield{fields}(O, \field{f})$ для всех $O \in
+    расширяя множество целей $\Mf{fields}(\AO, \field{f})$ для всех $\AO \in
     \pts{a}$, и если переменная $a$ может указывать хоть на один разделяемый
-    объект, то записываемые объекты утекают. В этом случае мы не имеем права
-    безусловно замещать множество целей $\Mfield{fields}(O, \field{f})$ для
-    всех $O$, так как при исполнении программы реальная запись поля случится
-    только для одного из объектов, но не для всех. Однако, последнее
-    высказывание может подтолкнуть на мысль о том, что если множество целей
-    $\pts{a} = \{O_i\}$, то есть содержит только один абстрактный объект,
-    отличный от $\AOGlobal$, то мы можем установить множество
-    $\Mfield{fields}(O_i, \field{f})$ равным $\pts{x}$.
-    \[ \M' \gets \op{putfield}(\M, a, \field{f}, x) \Rightarrow \]
-    \[\begin{split}
-      \M' = \M,\ &\text{кроме} \\
+    объект, то записываемые объекты утекают. Заметим, что
+    безусловно замещать множество целей $\Mf{fields}(\AO, \field{f})$ для
+    всех $\AO$ нельзя, так как при исполнении программы реальная запись поля
+    случится только для одного из объектов, а не для всех. Однако, если
+    множество целей $\pts{a}$ содержит только один абстрактный объект $\AO$,
+    отличный от $\AOGlobal$,
+    \todo{Баг! Если $\AO$ создан в цикле, то так делать нельзя!}
+    то можно установить множество $\Mf{fields}(\AO,
+    \field{f})$ равным $\pts{x}$\footnote{
+      Подобное замещение целей ссылочного поля называется строгим присваиванием
+      \engdef{strong update} и существенно повышает точность
+      анализа~\cite{lhotak_strong_update}.
+    }.
+    \begin{gather*}
+      \M' \gets \op{putfield}(\M, a, \field{f}, x) \colon \\
+      \begin{aligned}
         &\begin{split}
-          \text{для всех } &O \in \pts{a}\colon
-            \M'.\Mfield{fields}(O, \field{f}) =
-            \pts{x}\ \cup \\
-            &\cup
-            \begin{cases}
-              \M.\Mfield{fields}(O, \field{f}), & \text{если }
-                \lvert\pts{a}\rvert > 1 \text{ или } \pts{a} = \{\AOGlobal\};\\
-              \emptyset, & \text{иначе},
-            \end{cases}
-        \end{split} \\
-        &\begin{split}
-          \M'.&\Mfield{escaped} = \M.\Mfield{escaped}\ \cup \\
-          &\cup
-            \begin{cases}
-              \TClosure_\M(\pts{x}), & \text{если }
-                \pts{a} \cap (\M.\Mfield{shared} \cup
-                  \M.\Mfield{escaped}) \ne \emptyset;\\
-              \emptyset, & \text{иначе}.
-            \end{cases}
-        \end{split}
-    \end{split}\]
+          \Ms'.\Mf{fields} =
+            &\{ (\AO, \type{g}, pts) \mid
+              (\AO, \type{g}, pts) \in \Ms.\Mf{fields}\colon \AO \notin \pts{a}
+              \text{ или } \type{g} \neq \field{f} \} \cup{} \\
+            \cup &
+            \left\{ \begin{aligned}
+              &\{ (\AO, \type{f}, \pts{x}) \}, \quad \text{если }
+                \pts{a} = \{\AO\}, \AO \neq \AOGlobal;\\
+              &\{ (\AO, \type{f}, \pts{x} \cup pts) \mid
+                (\AO, \type{f}, pts) \in \Ms.\Mf{fields}\colon \AO \in \pts{a}
+              \}, \quad \text{иначе}.
+            \end{aligned} \right. \\
+        \end{split}\\
+        &\Ms'.\Mf{shared} = \Ms.\Mf{shared} \cup
+          \begin{cases}
+            \TClosure_\Ms(\pts{x}), & \text{если }
+              \pts{a} \cap \Ms.\Mf{shared} \ne \emptyset;\\
+            \emptyset, & \text{иначе}.
+          \end{cases}
+      \end{aligned}
+    \end{gather*}
+
+    Операция преобразования типа фильтрует множество объектов, исключая
+    несовместимые по присваиванию:
+    \begin{gather*}
+      x \gets \op{cast}[\type{T}](a) \colon \\
+      \pts{x} = \{ \AOTyped{T'} \mid \AOTyped{T'} \in \pts{a} \text{ и }
+        T \leq T' \}.
+    \end{gather*}
 
     В результате перевода программы в SSA-форму могут появиться \phi"=функции
     от переменных ссылочного типа и от \M"=переменных. Оба вида функций
     обладают довольно простой семантикой:
-    \[ x \gets \op{phi}(a_1, \ldots, a_N) \Rightarrow
-       \pts{x} = \bigcup_{i = 1}^N \pts{a_i}; \]
-    \[ \M' \gets \op{phi}(\M_1, \ldots, \M_N) \Rightarrow \]
-    \[\begin{split}
-      \M' = \{
-      &\Mfield{fields}(O, f) = \bigcup_{i = 1}^N \M_i.\Mfield{fields}(O, f), \\
-      &\Mfield{statics}(f) = \bigcup_{i = 1}^N \M_i.\Mfield{statics}(f), \\
-      &\Mfield{escaped} = \bigcup_{i = 1}^N \M_i.\Mfield{escaped}, \\
-      &\Mfield{shared} = \bigcup_{i = 1}^N \M_i.\Mfield{shared}
-      \}.
-    \end{split}\]
-
-
-  \subsection{Операции языка \texorpdfstring{\java}{Java}}
-
-    При анализе указателей достаточно рассматривать далеко не все операции.
-    Благодаря этому мы можем построить вспомогательное внутреннее
-    представление только с необходимой и достаточной информацией о потоках
-    данных и зависимостями по памяти.
-
-    Приведем список всех рассматриваемых в рамках анализа указателей операций
-    и их интерпретацию во вспомогательном внутреннем представлении.
-
-    Не зависят от памяти две операции. Создание нового объекта типа
-    $\type{T}$:
-    \[ x \gets \op{new}(\type{T}), \]
-    и присваивание специального значения null:
-    \[ x \gets \op{null}. \]
-
-    Изначальное состояние памяти (\M"=переменная) получается специальным
-    образом:
-    \[ \M_0 \gets \op{initialmemory}. \]
-    Формальный параметр $p$ консервативно берется из разделяемой памяти
-    \[ p \gets \op{shared}(\M_0). \]
-
-    Чтение обычного поля $\field{f}$ из переменной $a$ использует
-    \M"=переменную:
-    \[ x \gets \op{getfield}(\M_i, a, \field{f}), \]
-    аналогично имеем чтение статического поля $\sfield{T}{f}$:
-    \[ x \gets \op{getstatic}(\M_i, \sfield{T}{f}). \]
-    Запись переменной $x$ в обычное поле $\field{f}$ переменной $a$ порождает
-    \M"=переменную:
-    \[ \M_j \gets \op{putfield}(\M_i, a, \field{f}, x), \]
-    аналогично порождает \M"=переменную запись в статическое поле
-    $\sfield{T}{f}$:
-    \[ \M_j \gets \op{putstatic}(\M_i, \sfield{T}{f}, x). \]
-
-    Чтение и запись $i$-го элемента массива консервативно преобразуется в
-    работу с синтетическим полем $\field{elements}$, которое добавляется всем
-    типам"=массивам.
-
-    Вызов функции с параметрами $p_0, \ldots, p_n$ и возвращаемым значением,
-    которое записывается в переменную $x$, консервативно представляется
-    следующим образом:
-    \[\begin{aligned}
-      \M_j &\gets \op{escape}(\M_i, p_0, \ldots, p_n); \\
-      x    &\gets \op{shared}(\M_j).
-    \end{aligned}\]
-    Заметим, что в случае отсутствия возвращаемого значения, последнюю строку
-    необходимо убрать.
-
-    \todo{Привести пример как простенькая программа выглядит в такой
-    терминологии}
+    \[
+      x \gets \op{phi}(a_1, \ldots, a_N) \colon \quad
+      \pts{x} = \bigcup_{i = 1}^N \pts{a_i},
+    \]
+    \begin{gather*}
+      \M' \gets \op{phi}(\M_1, \ldots, \M_N) \colon \\
+      \begin{aligned}
+        &\begin{split}
+          \Ms'.&\Mf{fields} = \{(\AO, \type{f}, \bigcup_{i = 1}^N pts_i) \mid
+            \AO \in AbsObjects, \type{f} \in Fields, \\
+            & 1 \leq i \leq N\colon
+            (\AO, \type{f}, pts_i) \in \Ms_i.\Mf{fields} \},
+       \end{split} \\
+        &\Ms'.\Mf{shared} = \bigcup_{i = 1}^N \Ms_i.\Mf{shared}.
+      \end{aligned}
+    \end{gather*}
 
   \section{Оптимизация удаления чтений полей}
 
