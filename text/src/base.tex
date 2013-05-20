@@ -559,6 +559,7 @@
     типам"=массивам.
 
   \subsection{Использование информации о типах}
+    \label{section:op_types}
 
     Учет строгой системы типов языка \java важен для проведения точного анализа
     указателей.
@@ -585,11 +586,15 @@
         \\ \hline
 
         $a \gets \op{new}[\type{T}]$
-        & T
+        & $\type{T}$
         \\ \hline
 
         $a \gets \op{getfield}[\field{f}](a)$
         & тип поля $\field{f}$
+        \\ \hline
+
+        $a \gets \op{cast}[\type{T}](b)$
+        & $\type{T}$
         \\ \hline
 
       \end{tabular}
@@ -768,11 +773,13 @@
     где $Fields$~--- это множество идентификаторов полей объектов,
     присутствующих в анализируемой программе.
     Заметим, что это множество можно рассматривать как отображение:
-    \[
+    \begin{gather*}
       \Ms.\Mf{fields} \colon
         (AbsObjects \times Fields) \to
-        \powerset{AbsObjects}.
-    \]
+        \powerset{AbsObjects}, \\
+      \Ms.\Mf{fields}(O, f) = pts \Leftrightarrow
+        (O, f, pts) \in \Ms.\Mf{fields}.
+    \end{gather*}
 
     Во-вторых, \Ms"=структура содержит информацию о разделяемых объектах,
     то есть объектах, которые утекли \engdef{escaped} из анализируемого метода
@@ -889,9 +896,9 @@
     Такая постановка задачи несколько отличается от классической постановки
     анализа потока данных~\cite{muchnick, nielson}, но может быть сведена к
     таковой введением более сложной полурешетки свойств.
-    Соответственно итеративный алгоритм с небольшими модификациями подходит для
-    решения этой задачи анализа, будет давать корректные результаты и
-    гарантированно сходиться. Алгоритм приведен в разделе~\todoref.
+    Соответственно, итеративный алгоритм с небольшими модификациями подходит
+    для решения этой задачи анализа, будет давать корректные результаты и
+    гарантированно сходиться~\cite{kildall}.
 
     Теперь задачу анализа указателей можно сформулировать в терминах задачи
     анализа потока данных.
@@ -908,6 +915,12 @@
 
     Начальные значения потоковых свойств и потоковые функции описаны
     в разделе~\ref{section:flow_functions}.
+
+    Результатами работы алгоритма являются множества абстрактных объектов,
+    являющиеся целями выражений ссылочно типа. Итого, два выражения могут быть
+    синонимами тогда и только тогда, когда они имеют совместимые по
+    присваиванию типы (см.~раздел~\ref{section:op_types}) и множества их целей
+    имеют непустое пересечение.
 
   \subsection{Семантика операций}
     \label{section:flow_functions}
@@ -987,7 +1000,7 @@
     хотя бы на один разделяемый объект, то возвращаемое множество расширяется
     всеми разделяемыми объектами:
     \begin{gather*}
-      x \gets \op{getfield}(\M, a, \field{f}) \colon \\
+      x \gets \op{getfield}[\field{f}](\M, a) \colon \\
       \pts{x} = \left( \bigcup_{\AO \in \pts{a}} \Ms.\Mf{fields}(\AO,
       \field{f}) \right) \cup
       \begin{cases}
@@ -1013,21 +1026,22 @@
       \engdef{strong update} и существенно повышает точность
       анализа~\cite{lhotak_strong_update}.
     }.
+    \todo{сделать функцию монотонной}
     \begin{gather*}
-      \M' \gets \op{putfield}(\M, a, \field{f}, x) \colon \\
+      \M' \gets \op{putfield}[\field{f}](\M, a, x) \colon \\
       \begin{aligned}
         &\begin{split}
           \Ms'.\Mf{fields} =
-            &\{ (\AO, \type{g}, pts) \mid
-              (\AO, \type{g}, pts) \in \Ms.\Mf{fields}\colon \AO \notin \pts{a}
-              \text{ или } \type{g} \neq \field{f} \} \cup{} \\
+            &\{ (\AO, g, pts) \mid
+              (\AO, g, pts) \in \Ms.\Mf{fields}\colon \AO \notin \pts{a}
+              \text{ или } g \neq \field{f} \} \cup{} \\
             \cup &
             \left\{ \begin{aligned}
               &\{ (\AO, \type{f}, \pts{x}) \}, \quad \text{если }
                 \pts{a} = \{\AO\}, \AO \neq \AOGlobal;\\
               &\{ (\AO, \type{f}, \pts{x} \cup pts) \mid
                 (\AO, \type{f}, pts) \in \Ms.\Mf{fields}\colon \AO \in \pts{a}
-              \}, \quad \text{иначе}.
+              \}, \quad \text{иначе},
             \end{aligned} \right. \\
         \end{split}\\
         &\Ms'.\Mf{shared} = \Ms.\Mf{shared} \cup
@@ -1058,14 +1072,16 @@
       \M' \gets \op{phi}(\M_1, \ldots, \M_N) \colon \\
       \begin{aligned}
         &\begin{split}
-          \Ms'.&\Mf{fields} = \{(\AO, \type{f}, \bigcup_{i = 1}^N pts_i) \mid
-            \AO \in AbsObjects, \type{f} \in Fields, \\
+          \Ms'.&\Mf{fields} = \{(\AO, f, \bigcup_{i = 1}^N pts_i) \mid
+            \AO \in AbsObjects, f \in Fields, \\
             & 1 \leq i \leq N\colon
-            (\AO, \type{f}, pts_i) \in \Ms_i.\Mf{fields} \},
+            (\AO, f, pts_i) \in \Ms_i.\Mf{fields} \},
        \end{split} \\
         &\Ms'.\Mf{shared} = \bigcup_{i = 1}^N \Ms_i.\Mf{shared}.
       \end{aligned}
     \end{gather*}
+
+    \todo{монотонность}
 
   \section{Оптимизация удаления чтений полей}
 
