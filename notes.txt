@@ -3,9 +3,13 @@
 * Совмещать mayAlias и mustAlias: putstatic A.f = x => { A.f -> x }
 * reorder putfield? Если два putfield'а независимы, можем развязать их "линию"
   m1 = putfield(m0, x.f)    m1 = putfield(m0, x.f)
-  m2 = putfield(m1, y.f) => m2 = putfield(m0, x.f)
+  m2 = putfield(m1, y.f) => m2 = putfield(m0, y.f)
   m3 = reload(m2)           m3 = reload(join(m1, m2))
 * put memory elimination
+* reorder getfield + (getfield-getfield elimination)
+  z0 = getfield(m0, x.f)    z0 = getfield(m0, x.f)    z0 = getfield(m0, x.f)
+  m1 = putfield(m0, y.f) => m1 = putfield(m0, y.f) => m1 = putfield(m0, y.f)
+  z1 = getfield(m1, x.f)    z1 = getfield(m0, x.f)    z1 = z0
 
 Презентация:
 * сказать про сложность, или не сказать?
