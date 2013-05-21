@@ -8,8 +8,6 @@
 \usepackage{datetime} % used by bibliography
 \newcommand{\usedate}[3]{({\Russian дата обращения: \formatdate{#1}{#2}{#3}})}
 
-%\setcounter{tocdepth}{2} % contents depth
-
 \usepackage[english,russian]{babel}
 
 % add biblio to table of contents + correct russian name
@@ -39,11 +37,15 @@
    \end{figure}}
 
 \let\oldsection\section
-\renewcommand{\section}{\newpage\oldsection}
+\renewcommand{\section}{\clearpage\oldsection}
 
+% phantomsection is required to generate
+% correct links from TOC & PDF bookmarks
 \newcommand{\sectionwithoutnumber}[1]{
-  \section*{#1}
+  \clearpage
+  \phantomsection
   \addcontentsline{toc}{section}{#1}
+  \oldsection*{#1}
 }
 
 \usepackage{todonotes}

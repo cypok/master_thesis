@@ -16,3 +16,8 @@
 
 Текст:
 * в реализации сказать, что SSA форма и протяжка присваиваний имеются на халяву
+
+LaTeX:
+* post-hook не обрабатывает спец-символы под OS X
+* дочитать http://tex.stackexchange.com/questions/41504/
+  /loading-tocloft-makes-ifdefined-chapter-true-in-article-class
