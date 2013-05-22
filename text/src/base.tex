@@ -305,7 +305,6 @@
     исполнения для платформы \eng{Java~SE}. В качестве пользователя анализа
     также требуется реализовать некоторую оптимизацию и провести замеры ее
     эффективности.
-    \todo{добавить про необходимость реализации удаления избыточных чтений}
 
   \section{Существующие алгоритмы анализа указателей}
 
@@ -1058,8 +1057,8 @@
             \emptyset, & \text{если } \pts{a} = \emptyset; \\
             pts, & \text{если } \pts{a} \neq \emptyset \text{ и } (\AO \notin \pts{a} \text{ или } g
               \neq \field{f}); \\
-            \pts{x}, & \text{если } \pts{a} = \{\AO\} \text{ и } g = \type{f}
-              \text{ и } IsSingle(\AO); \\
+            \pts{x}, & \text{если } \pts{a} = \{\AO\} \text{ и } IsSingle(\AO)
+              \text{ и } g = \type{f}; \\
             pts \cup \pts{x}, & \text{иначе},
           \end{cases} \\
         &\Ms'.\Mf{shared} = \Ms.\Mf{shared} \cup
