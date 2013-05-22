@@ -63,6 +63,16 @@
 % (this crashes some packages, e.g. \listoftodos from todonotes)
 \let\chapter\undefined
 
+\usepackage{array}
+% Issue \raggedright to achieve the desired horizontal alignment,
+% Declare \let\newline\\ to allow to use \newline for manual line breaks within
+%   a cell (note that \centering & friends change the meaning of \\ -- this is
+%   the problem with Jake's solution),
+% Issue \arraybackslash (i.e., \let\\\tabularnewline) to allow (again) to use
+%   \\ for ending rows,
+% Issue \hspace{0pt} to allow the first word in a cell to be hyphenated.
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+
 \usepackage{../../common/cypokcommon}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,9 +178,9 @@
 
       Git info
 
-      \begin{table}[!htb]
+      \begin{table}[!h]
         \centering
-        \begin{tabular}{rp{0.5\textwidth}}
+        \begin{tabular}{r L{0.5\textwidth}}
           sha1: & \texttt{\GitAbbrHash} \\
           title:& \GitSubject \\
           date: & \GitDate
