@@ -10,12 +10,6 @@
 
 \usepackage[english,russian]{babel}
 
-% add biblio to table of contents + correct russian name
-\addto\captionsrussian{
-  \let\oldrefname\refname
-  \renewcommand\refname{\addcontentsline{toc}{section}{\oldrefname}\oldrefname}
-}
-
 % russian enumerators
 \renewcommand{\theenumii}{(\asbuk{enumii})}
 \ifdefined\labelenumii
@@ -46,6 +40,14 @@
   \phantomsection
   \addcontentsline{toc}{section}{#1}
   \oldsection*{#1}
+}
+% also add biblio to table of contents
+\let\oldbibliography\bibliography
+\renewcommand{\bibliography}{
+  \clearpage
+  \phantomsection
+  \addcontentsline{toc}{section}{\refname}
+  \oldbibliography
 }
 
 \usepackage{todonotes}
