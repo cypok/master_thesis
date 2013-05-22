@@ -80,6 +80,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \input{../../common/gitinfo}
+\newcommand{\GitCommitsURL}{http://github.com/cypok/master_thesis/commit/}
 
 \newcommand{\java}{\eng{Java}\xspace}
 
@@ -181,7 +182,7 @@
       \begin{table}[!h]
         \centering
         \begin{tabular}{r L{0.5\textwidth}}
-          sha1: & \texttt{\GitAbbrHash} \\
+          sha1: & \href{\GitCommitsURL\GitAbbrHash}{\texttt{\GitAbbrHash}} \\
           title:& \GitSubject \\
           date: & \GitDate
         \end{tabular}
