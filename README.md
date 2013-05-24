@@ -20,18 +20,13 @@
 Для сборки LaTeX документов используется [rubbr](https://github.com/be9/rubbr)
 (хотя можно собирать и в ручную).
 
-Многие документы используют файл `common/gitinfo.tex`, который содержит
-информацию о последнем git коммите. В простом варианте его можно скопировать с
-образца-заглушки:
+Некоторые документы используют информацию о последнем Git коммите.
+Изначально выдаются сообщения `no Git info` на месте реальной информации.
+Для ее генерации необходимо скопировать хуки и выполнить, например, `checkout`:
 
-    cp common/gitinfo.tex.sample common/gitinfo.tex
-
-В сложном варианте этот файл генерируется с помощью хуков git. Для этого
-достаточно скопировать хуки и выполнить, например, `checkout`:
-
-    ln -s common/post-hook .git/hooks/post-checkout
-    ln -s common/post-hook .git/hooks/post-commit
-    ln -s common/post-hook .git/hooks/post-merge
+    ln -s ../../common/gitinfo-hook .git/hooks/post-checkout
+    ln -s ../../common/gitinfo-hook .git/hooks/post-commit
+    ln -s ../../common/gitinfo-hook .git/hooks/post-merge
     git checkout master
 
 #### О чем работа

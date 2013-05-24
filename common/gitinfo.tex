@@ -1,0 +1,13 @@
+% Provide some basic information about current Git revision.
+%
+% TODO: merge with gitinfo package?
+% http://www.ctan.org/tex-archive/macros/latex/contrib/gitinfo
+
+\InputIfFileExists{../../common/gitinfo-data}{}{
+  % defaults
+  \newcommand{\GitMissing}{(no Git info)}
+  \newcommand{\GitAbbrHash}{\GitMissing}
+  \newcommand{\GitDate}{\GitMissing}
+  \newcommand{\GitSubject}{\GitMissing}
+}
+

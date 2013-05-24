@@ -1,19 +1,20 @@
 #!/bin/sh
 # Post-{commit,checkout,merge} hook for generation of git info.
-# Copy it to .git/hooks/post-{commit,checkout,merge}.
+# Copy it to .git/hooks/post-{commit,checkout,merge} (or link it).
 #
 git log -1 HEAD --date=iso --pretty=format:"
 %% This file is generated after git commit, checkout or merge.
 %% Do not edit it!
 \newcommand{\GitAbbrHash}{%h}
 \newcommand{\GitDate}{%ad}
-" > common/gitinfo.tex
+" > common/gitinfo-data.tex
 
+# escape characters in subject
 git log -1 HEAD --date=iso --pretty=format:"%s" |
   sed 's/\\/\\textbackslashXXX/g' |
   sed 's/~/\\textasciitildeXXX/g' |
   sed 's/\^/\\textasciicircumXXX/g' |
   sed 's/\([&$#_%{}]\)/\\\1/g' |
   sed 's/\(textbackslash\|textasciitilde\|textasciicircum\)XXX/\1{}/g' |
-  sed 's/\(.*\)/\\newcommand{\\GitSubject}{\1}/g' >> common/gitinfo.tex
+  sed 's/\(.*\)/\\newcommand{\\GitSubject}{\1}/g' >> common/gitinfo-data.tex
 
