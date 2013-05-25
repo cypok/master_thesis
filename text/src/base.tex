@@ -10,6 +10,8 @@
 \usepackage[english,russian]{babel}
 \usepackage{indentfirst}
 
+\usepackage[babel,final,protrusion=true,expansion]{microtype}
+
 \usepackage{geometry}
 
 \usepackage[usenames,dvipsnames]{color}
@@ -235,10 +237,12 @@
     }
   \end{center}
 
-  \clearpage
-  \listoftodos
+  \microtypesetup{protrusion=false} % disable protrusion for TOC
+    \clearpage
+    \listoftodos
 
-  \tableofcontents
+    \tableofcontents
+  \microtypesetup{protrusion=true}
 
   \sectionwithoutnumber{Введение}
 
