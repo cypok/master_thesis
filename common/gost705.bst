@@ -11,6 +11,10 @@
 %% 
 %% This file is part of the disser package.
 %% 
+%%
+%% Function format.names is fixed to support UTF8
+%% Modified by Vladimir Parfinenko
+%%
 
 
 ENTRY
@@ -664,7 +668,7 @@ FUNCTION {format.names}
   numnames 'namesleft :=
     { namesleft #0 > }
     { s nameptr
-      "{vv~}{ll}{~f.}{, jj}" format.name$ 't :=
+      "{vv~}{ll}{~ff}{, jj}" format.name$ 't :=
       nameptr #1 >
         { nameptr #4 =
           numnames #4 > and
