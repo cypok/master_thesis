@@ -10,14 +10,8 @@
   z0 = getfield(m0, x.f)    z0 = getfield(m0, x.f)    z0 = getfield(m0, x.f)
   m1 = putfield(m0, y.f) => m1 = putfield(m0, y.f) => m1 = putfield(m0, y.f)
   z1 = getfield(m1, x.f)    z1 = getfield(m0, x.f)    z1 = z0
+* нужно ли свойство mustAlias: можем ли мы всегда сделать ноды равными,
+  если они mustAlias?
 
 Презентация:
 * сказать про сложность, или не сказать?
-
-Текст:
-* в реализации сказать, что SSA форма и протяжка присваиваний имеются на халяву
-
-LaTeX:
-* post-hook не обрабатывает спец-символы под OS X
-* дочитать http://tex.stackexchange.com/questions/41504/
-  /loading-tocloft-makes-ifdefined-chapter-true-in-article-class

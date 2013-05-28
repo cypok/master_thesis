@@ -17,8 +17,10 @@
 \ifdefined\setbeamertemplate
   \setbeamertemplate{enumerate subitem}{(\asbuk{enumii})}
 \fi
-\usepackage{subfig}
-\renewcommand{\thesubfigure}{\asbuk{subfigure}}
+
+\usepackage{caption}
+\captionsetup[figure]{labelsep=period}
+\captionsetup[table]{labelsep=period}
 
 
 % my own environment for using figure:
