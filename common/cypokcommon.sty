@@ -86,3 +86,19 @@
 \DeclareFontSubstitution{U}{mathx}{m}{n}
 \DeclareMathAccent{\widebar}{0}{mathx}{"73}
 
+\usepackage{hyperref}
+\newcommand\titleauthor[2]{
+  \newcommand\thetitle{#1}
+  \newcommand\theauthor{#2}
+
+  \title{\thetitle}
+  \author{\theauthor}
+
+  \hypersetup{
+    pdfinfo={
+      Title={\thetitle},
+      Author={\theauthor},
+      Subject={}
+    }
+  }
+}
