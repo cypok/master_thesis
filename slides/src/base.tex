@@ -8,8 +8,6 @@
 \usepackage[utf8x]{inputenc}
 \usepackage[english,russian]{babel}
 
-\usepackage{eulervm} % use Euler VM font for math
-
 \usepackage{ifdraft}
 
 \usepackage{xspace}
@@ -33,14 +31,6 @@
 
 \input{../../common/gitinfo}
 
-% add frame number to footline
-\newcommand*\oldinsertshorttitle{}
-\let\oldinsertshorttitle\insertshorttitle
-\renewcommand*\insertshorttitle{
-  \oldinsertshorttitle \hfill
-  \insertframenumber\,/\,\inserttotalframenumber
-}
-
 \newenvironment{backup}
   {
     \appendix
@@ -51,9 +41,6 @@
     \addtocounter{framenumberappendix}{-\value{framenumber}}
     \addtocounter{framenumber}{\value{framenumberappendix}}
   }
-
-% hide navigation symbols
-\beamertemplatenavigationsymbolsempty
 
 \newcommand{\java}{\eng{Java}\xspace}
 
@@ -72,8 +59,39 @@
 % SLIDES FORMAT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\usetheme{Warsaw}
+% custom footer: author | title | frame number
+% same as infolines outer theme but frame number is minimal
+\makeatletter
+\setbeamertemplate{footline}
+{%
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.46\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.46\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.08\paperwidth,ht=2.25ex,dp=1ex,center]{page number in head/foot}%
+    \usebeamerfont{page number in head/foot}
+    \insertframenumber{}\,/\,\inserttotalframenumber
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\makeatother
+
+% hide navigation symbols
+\beamertemplatenavigationsymbolsempty
+
+\setbeamercolor{structure}{fg=Blue}
 \usecolortheme{seahorse}
+
+\setbeamercolor{title}{use={structure,background},fg=structure.fg,bg=background.bg}
+
+% custom footer colors: renumber palette uses
+\setbeamercolor*{author in head/foot}{parent=palette primary}
+\setbeamercolor*{title in head/foot}{parent=palette secondary}
+\setbeamercolor*{page number in head/foot}{parent=palette tertiary}
 
 \setbeamercovered{transparent}
 
@@ -105,9 +123,12 @@
 
 \begin{document}
 
+{
+\setbeamertemplate{footline}{}
 \begin{frame}
   \titlepage
 \end{frame}
+}
 
 \begin{frame}{Анализ синонимов и указателей}
 
