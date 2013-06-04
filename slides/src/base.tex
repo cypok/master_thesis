@@ -85,7 +85,7 @@
 % hide navigation symbols
 \beamertemplatenavigationsymbolsempty
 
-\setbeamercolor{structure}{fg=MediumBlue}
+\setbeamercolor{structure}{fg=DarkBlue}
 \usecolortheme{seahorse}
 
 % custom title page
@@ -145,12 +145,12 @@
 
 \begin{frame}{Анализ синонимов и указателей}
 
-  \begin{block}{Анализ синонимов \engdef{Alias Analysis}}
+  \begin{block}{Анализ синонимов \engdef{alias analysis}}
     Могут ли два разных выражения ссылочного типа указывать на одно и то же
     место в памяти?
   \end{block}
 
-  \begin{block}{Анализ указателей \engdef{Points-to Analysis}}
+  \begin{block}{Анализ указателей \engdef{points-to analysis}}
     На какие объекты в памяти могут указывать выражения ссылочного типа?
   \end{block}
 
@@ -160,13 +160,15 @@
 
   \begin{itemize}
     \item \textbf{Цель:}
-          разработка алгоритма анализа указателей для языка \java
+          разработка алгоритма анализа указателей для языка \java.
     \medskip
     \item \textbf{Основные задачи:}
       \begin{itemize}
         \item изучить существующие алгоритмы и разработать новый, выбрав
-              подходящий за основу
-        \item разработать схему выражения неявных зависимостей по памяти
+              подходящий за основу;
+        \item разработать схему выражения неявных зависимостей по памяти;
+        \item провести замеры эффективности оптимизации, использующей
+              результаты анализа.
       \end{itemize}
   \end{itemize}
 
@@ -175,7 +177,7 @@
 \begin{frame}{Недостатки предыдущей работы}
 
   \begin{center}
-    \begin{minipage}[t]{0.60\textwidth}
+    \begin{minipage}[t]{0.35\textwidth}
       \begin{block}{Проблема с полями}
         \begin{algorithmic}[1]
           \State $x \gets \op{new}~\type{T}$
@@ -187,7 +189,7 @@
       \end{block}
     \end{minipage}
 
-    \medskip
+    \bigskip
     $a$ и $b$~--- могут ли быть синонимами?
 
     \visible<2->{Да.}
