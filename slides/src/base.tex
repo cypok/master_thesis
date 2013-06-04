@@ -1,12 +1,14 @@
-\documentclass[xcolor=dvipsnames]{beamer}
+\documentclass[xcolor=svgnames,usepdftitle=false]{beamer}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PACKAGES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\usepackage{ucs}
-\usepackage[utf8x]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
 \usepackage[english,russian]{babel}
+
+\usepackage[babel,final,protrusion=true,expansion]{microtype}
 
 \usepackage{ifdraft}
 
@@ -83,10 +85,13 @@
 % hide navigation symbols
 \beamertemplatenavigationsymbolsempty
 
-\setbeamercolor{structure}{fg=Blue}
+\setbeamercolor{structure}{fg=MediumBlue}
 \usecolortheme{seahorse}
 
-\setbeamercolor{title}{use={structure,background},fg=structure.fg,bg=background.bg}
+% custom title page
+\setbeamertemplate{title page}[default][rounded=true]
+\setbeamercolor*{title}{parent=palette primary}
+\setbeamerfont{institute}{size={}}
 
 % custom footer colors: renumber palette uses
 \setbeamercolor*{author in head/foot}{parent=palette primary}
@@ -99,23 +104,34 @@
 % BODY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title[Анализ указателей и синонимов]{%
+% set PDF info
+\titleauthor{%
+  Применение анализа указателей и синонимов
+  для оптимизации многопоточных программ%
+}{%
+  Владимир Парфиненко%
+}
+
+% set footer info
+\renewcommand\insertshortauthor{Парфиненко Владимир Владимирович}
+\renewcommand\insertshorttitle{Анализ указателей и синонимов}
+
+% set title page info
+\renewcommand\insertauthor{%
+  Парфиненко Владимир Владимирович \\
+  \vspace{0.5cm}
+  \small
+    Научные руководители:\\
+    м.\,н.\,с.~ИСИ~СО~РАН, Павлов~Павел~Евгеньевич \\
+    зав.\,лаб.~ИСИ~СО~РАН, к.\,т.\,н.~Шелехов~Владимир~Иванович%
+}
+\renewcommand\inserttitle{%
   Применение анализа указателей и синонимов
   для оптимизации многопоточных программ%
 }
-\author[Парфиненко Владимир Владимирович]{%
-  Парфиненко Владимир Владимирович%
-  \texorpdfstring{%
-    \\
-    \vspace{0.5cm}
-    \small
-      Научные руководители:\\
-      м.\,н.\,с.~ИСИ~СО~РАН, Павлов~Павел~Евгеньевич \\
-      зав.\,лаб.~ИСИ~СО~РАН, к.\,т.\,н.~Шелехов~Владимир~Иванович
-  }{}% short title in PDF info
-}
-\institute{
-  Новосибирский Государственный Университет
+\institute{%
+  Новосибирский национальный исследовательский\\
+  государственный университет%
 }
 \date{
   Новосибирск, 2013\ifdraft{ \\\medskip \footnotesize Git date: \GitDate.}{}
@@ -123,12 +139,9 @@
 
 \begin{document}
 
-{
-\setbeamertemplate{footline}{}
-\begin{frame}
+\begin{frame}[plain]
   \titlepage
 \end{frame}
-}
 
 \begin{frame}{Анализ синонимов и указателей}
 
@@ -137,7 +150,7 @@
     место в памяти?
   \end{block}
 
-  \begin{block}{Анализ указателей \engdef{Points-To Analysis}}
+  \begin{block}{Анализ указателей \engdef{Points-to Analysis}}
     На какие объекты в памяти могут указывать выражения ссылочного типа?
   \end{block}
 
