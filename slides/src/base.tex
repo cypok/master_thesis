@@ -25,6 +25,9 @@
 
 \hypersetup{unicode}
 
+\usepackage{tikz}
+\usetikzlibrary{shapes}
+
 \usepackage{../../common/cypokcommon}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -158,19 +161,19 @@
 
 \begin{frame}{Цель и задачи}
 
-  \begin{itemize}
-    \item \textbf{Цель:}
-          разработка алгоритма анализа указателей для языка \java.
-    \medskip
-    \item \textbf{Основные задачи:}
-      \begin{itemize}
-        \item изучить существующие алгоритмы и разработать новый, выбрав
-              подходящий за основу;
-        \item разработать схему выражения неявных зависимостей по памяти;
-        \item провести замеры эффективности оптимизации, использующей
-              результаты анализа.
-      \end{itemize}
-  \end{itemize}
+  \begin{block}{Цель}
+    Разработать алгоритм анализа указателей для языка \java.
+  \end{block}
+
+  \begin{block}{Основные задачи}
+    \begin{itemize}
+      \item Изучить существующие алгоритмы и разработать новый, выбрав
+            подходящий за основу.
+      \item Разработать схему выражения неявных зависимостей по памяти.
+      \item Провести замеры эффективности оптимизации, использующей
+            результаты анализа.
+    \end{itemize}
+  \end{block}
 
 \end{frame}
 
@@ -248,14 +251,14 @@
     \begin{column}{0.6\textwidth}
       \begin{block}{Программа с \M"=переменной}
         \begin{algorithmic}
-          \State $u \gets \op{getfield}(\M_0, a, \field{f})$
+          \State $u \gets \op{getfield}[\field{f}](\M_0, a)$
           \If{(\ldots)}
-            \State $\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x)$
+            \State $\M_1 \gets \op{putfield}[\field{f}](\M_0, a, x)$
           \Else
-            \State $\M_2 \gets \op{putfield}(\M_0, a, \field{f}, y)$
+            \State $\M_2 \gets \op{putfield}[\field{f}](\M_0, a, y)$
           \EndIf
           \State $\M_3 \gets \op{phi}(\M_1, \M_2)$
-          \State $v \gets \op{getfield}(\M_3, a, \field{f})$
+          \State $v \gets \op{getfield}[\field{f}](\M_3, a)$
         \end{algorithmic}
       \end{block}
     \end{column}
@@ -268,34 +271,73 @@
   \begin{columns}[t]
     \begin{column}{0.5\textwidth}
       \begin{align*}
-        &\M_0 \gets \op{initialmemory } \\
-        &\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x) \\
-        &\M_1 \gets \op{putstatic}(\M_0, \sfield{T}{f}, x) \\
-        &\M_1 \gets \op{reload}(\M_0) \\
-        &\M_1 \gets \op{escape}(\M_0, a_1, \ldots, a_N) \\
-        &\M_x \gets \op{phi}(\M_1, \ldots, \M_N) \\
+        &x \gets \op{null } \\
+        &x \gets \op{getfield}[\field{f}](\M_0, a) \\
+        &x \gets \op{new}[\type{T}] \\
+        &x \gets \op{shared}[\type{T}](\M_0) \\
+        &x \gets \op{cast}[\type{T}](a) \\
+        &x \gets \op{phi}(a_1, \ldots, a_N) \\
       \end{align*}
     \end{column}
     \begin{column}{0.5\textwidth}
       \begin{align*}
-        &x \gets \op{null } \\
-        &x \gets \op{getfield}(\M_0, a, \field{f}) \\
-        &x \gets \op{getstatic}(\M_0, \sfield{T}{f}) \\
-        &x \gets \op{new}(\type{T}) \\
-        &x \gets \op{shared}(\M_0) \\
-        &x \gets \op{phi}(a_1, \ldots, a_N) \\
+        &\M_0 \gets \op{initialmemory } \\
+        &\M_1 \gets \op{putfield}[\field{f}](\M_0, a, x) \\
+        &\M_1 \gets \op{reload}(\M_0) \\
+        &\M_1 \gets \op{escape}(\M_0, a_1, \ldots, a_N) \\
+        &\M_x \gets \op{phi}(\M_1, \ldots, \M_N) \\
       \end{align*}
     \end{column}
   \end{columns}
 
 \end{frame}
 
-\begin{frame}{Граф операций}
+\begin{frame}{Граф зависимостей по данным}
 
-  \begin{columns}[t]
+  \begin{columns}[c]
     \begin{column}{0.67\textwidth}
-      \begin{figure}
-        \includegraphics[width=\textwidth]{refmem_graph}
+      \begin{figure}%
+        \tikzstyle{op}=[ellipse,draw,line width=0.5pt,font=\tiny]
+
+        \tikzstyle{idx} = [at end,font=\tiny]
+
+        \tikzstyle{value} = [->,line width=0.5pt,red]
+        \tikzstyle{memory} = [->,line width=0.5pt,blue]
+
+        \begin{tikzpicture}
+          \foreach \name/\pos/\val in {%
+            {inmem/(0,1.5)/$\op{initialmemory}$},
+            {pf1/(-1,0)/$\op{putfield}[\field{f}]$},
+            {pf2/(1,0)/$\op{putfield}[\field{f}]$},
+            {phi/(0,-1)/$\op{phi}$},
+            {gf/(0,-2)/$\op{getfield}[\field{f}]$},
+            {a/(-2.5,2)/$\op{new}[\type{A}]$},
+            {b/(2,1)/$\op{new}[\type{B}]$},
+            {arg/(-2,1)/$\op{shared}[\type{C}]$}%
+          }{
+            \node[op] (\name) at \pos {\val};
+          }
+
+          \foreach \src/\dst/\idx/\kind/\pos in {%
+            inmem/pf1/1/memory/above,
+            inmem/pf2/1/memory/above,
+            pf1/phi/1/memory/above,
+            pf2/phi/2/memory/above,
+            phi/gf/1/memory/above right,
+            b/pf2/3/value/right,
+            arg/pf1/3/value/left%
+          }{
+            \draw[\kind] (\src) -- (\dst) node[idx,\pos] {\idx};
+          }
+
+          \draw[value] (a) .. controls +(-15:1cm) and +(90:1.5cm) .. (pf1)
+            node[idx,above left] {2};
+          \draw[value] (a) .. controls +(10:1cm) and +(70:3cm).. (pf2)
+            node[idx,above right] {2};
+          \draw[value] (a) .. controls +(-135:2cm) and +(160:1cm) .. (gf)
+            node[idx,above] {2};
+
+        \end{tikzpicture}
       \end{figure}
     \end{column}
     \begin{column}{0.33\textwidth}
@@ -303,11 +345,11 @@
         \begin{algorithmic}[1]
           \State $a \gets \op{new}~\type{A}$
           \If{(\ldots)}
-            \State $a.\field{f} \gets \op{new}~\type{A}$
+            \State $a.\field{f} \gets \op{arg}_{1,\type{C}}$
           \Else
-            \State $a.\field{f} \gets \op{arg}(1)$
+            \State $a.\field{f} \gets \op{new}~\type{B}$
           \EndIf
-          \State $\op{return}~a.\field{f}$
+          \State $b \gets a.\field{f}$
         \end{algorithmic}
       \end{block}
     \end{column}
@@ -316,8 +358,8 @@
   \medskip
   \begin{center}
     \small
-    Красные стрелки~--- зависимость по значению. \\
-    Синие стрелки~--- зависимость по памяти.
+    Красные стрелки~--- зависимости по значению. \\
+    Синие стрелки~--- зависимости по памяти.
   \end{center}
 
 \end{frame}
