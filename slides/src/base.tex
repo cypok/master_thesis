@@ -50,7 +50,12 @@
 \newcommand{\java}{\eng{Java}\xspace}
 
 \newcommand{\M}{\ensuremath{\mathbf{M}}}
-\newcommand{\Mfield}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\Ms}{\ensuremath{\widebar{\mathbf{M}}}}
+\newcommand{\Mf}[1]{\ensuremath{\mathbf{#1}}}
+
+\newcommand{\AOTyped}[1]{O^{\type{#1}}}
+\newcommand{\AO}{O}
+\newcommand{\AOGlobal}{\AO_{global}}
 
 \newcommand{\type}[1]{\mathsf{#1}}
 \newcommand{\field}[1]{\mathsf{#1}}
@@ -77,7 +82,7 @@
   \begin{beamercolorbox}[wd=.46\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
     \usebeamerfont{title in head/foot}\insertshorttitle
   \end{beamercolorbox}%
-  \begin{beamercolorbox}[wd=.08\paperwidth,ht=2.25ex,dp=1ex,center]{page number in head/foot}%
+  \begin{beamercolorbox}[wd=.08\paperwidth,ht=2.25ex,dp=1ex,leftskip=0cm plus1fill,rightskip=.015\paperwidth]{page number in head/foot}%
     \usebeamerfont{page number in head/foot}
     \insertframenumber{}\,/\,\inserttotalframenumber
   \end{beamercolorbox}}%
@@ -100,6 +105,9 @@
 \setbeamercolor*{author in head/foot}{parent=palette primary}
 \setbeamercolor*{title in head/foot}{parent=palette secondary}
 \setbeamercolor*{page number in head/foot}{parent=palette tertiary}
+
+%\setbeamercolor*{block title}{bg=black!10}
+%\setbeamercolor*{block body}{bg=black!10}
 
 \setbeamercovered{transparent}
 
@@ -284,7 +292,7 @@
         &\M_0 \gets \op{initialmemory } \\
         &\M_1 \gets \op{putfield}[\field{f}](\M_0, a, x) \\
         &\M_1 \gets \op{reload}(\M_0) \\
-        &\M_1 \gets \op{escape}(\M_0, a_1, \ldots, a_N) \\
+        &\M_1 \gets \op{escape}(\M_0, a) \\
         &\M_x \gets \op{phi}(\M_1, \ldots, \M_N) \\
       \end{align*}
     \end{column}
@@ -299,18 +307,18 @@
       \begin{figure}%
         \tikzstyle{op}=[ellipse,draw,line width=0.5pt,font=\tiny]
 
-        \tikzstyle{idx} = [at end,font=\tiny]
+        \tikzstyle{idx} = [midway,font=\tiny]
 
-        \tikzstyle{value} = [->,line width=0.5pt,red]
-        \tikzstyle{memory} = [->,line width=0.5pt,blue]
+        \tikzstyle{value} = [-latex,line width=0.5pt,red]
+        \tikzstyle{memory} = [-latex,line width=0.5pt,blue]
 
         \begin{tikzpicture}
           \foreach \name/\pos/\val in {%
             {inmem/(0,1.5)/$\op{initialmemory}$},
             {pf1/(-1,0)/$\op{putfield}[\field{f}]$},
             {pf2/(1,0)/$\op{putfield}[\field{f}]$},
-            {phi/(0,-1)/$\op{phi}$},
-            {gf/(0,-2)/$\op{getfield}[\field{f}]$},
+            {phi/(0,-1.5)/$\op{phi}$},
+            {gf/(0,-2.5)/$\op{getfield}[\field{f}]$},
             {a/(-2.5,2)/$\op{new}[\type{A}]$},
             {b/(2,1)/$\op{new}[\type{B}]$},
             {arg/(-2,1)/$\op{shared}[\type{C}]$}%
@@ -319,23 +327,26 @@
           }
 
           \foreach \src/\dst/\idx/\kind/\pos in {%
-            inmem/pf1/1/memory/above,
-            inmem/pf2/1/memory/above,
-            pf1/phi/1/memory/above,
-            pf2/phi/2/memory/above,
-            phi/gf/1/memory/above right,
+            inmem/pf1/1/memory/right,
+            inmem/pf2/1/memory/left,
+            pf1/phi/1/memory/right,
+            pf2/phi/2/memory/left,
+            phi/gf/1/memory/right,
             b/pf2/3/value/right,
             arg/pf1/3/value/left%
           }{
             \draw[\kind] (\src) -- (\dst) node[idx,\pos] {\idx};
           }
 
+          \draw[memory] (inmem) .. controls +(90:0.5cm) and +(90:1cm) .. (arg)
+            node[idx,above] {1};
+
           \draw[value] (a) .. controls +(-15:1cm) and +(90:1.5cm) .. (pf1)
-            node[idx,above left] {2};
+            node[idx,left] {2};
           \draw[value] (a) .. controls +(10:1cm) and +(70:3cm).. (pf2)
-            node[idx,above right] {2};
-          \draw[value] (a) .. controls +(-135:2cm) and +(160:1cm) .. (gf)
             node[idx,above] {2};
+          \draw[value] (a) .. controls +(-135:2cm) and +(160:1cm) .. (gf)
+            node[idx,below] {2};
 
         \end{tikzpicture}
       \end{figure}
@@ -370,14 +381,14 @@
     \begin{minipage}[t]{0.70\textwidth}
       \begin{block}{Разные источники объектов}
         \begin{algorithmic}[1]
-          \State $x \gets \op{new}(\type{T})$
-            \Comment{$\pts{x} = \{O_1\}$}
-          \State $y \gets \op{new}(\type{T})$
-            \Comment{$\pts{y} = \{O_2\}$}
-          \State $u \gets \op{getstatic}(\M_0, \sfield{T}{f})$
-            \Comment{$\pts{u} = \{O_{global}\}$}
-          \State $v \gets \op{arg}(1)$
-            \Comment{$\pts{v} = \{O_{global}\}$}
+          \State $x \gets \op{new}[\type{T}]$
+            \Comment{$\pts{x} = \{\AOTyped{T}_1\}$}
+          \State $y \gets \op{new}[\type{T}]$
+            \Comment{$\pts{y} = \{\AOTyped{T}_2\}$}
+          \State $u \gets \op{shared}[\type{T}](\M)$
+            \Comment{$\pts{u} = \{\AOGlobal\}$}
+          \State $v \gets \op{shared}[\type{T}](\M)$
+            \Comment{$\pts{v} = \{\AOGlobal\}$}
         \end{algorithmic}
       \end{block}
 
@@ -385,54 +396,77 @@
   \end{center}
 
   \medskip
-  \centerline{$AbstractObjects = \{O_1, O_2, O_{global}\}$}
+  \centerline{$AbsObjects = \{\AOTyped{T}_1, \AOTyped{T}_2, \AOGlobal\}$}
 
 \end{frame}
 
 \begin{frame}{Потоковые свойства}
 
-  $\pts{expr} \subset AbstractObjects$
+  \[\pts{x} \subseteq AbsObjects\]
 
-  \uncover<2->{\begin{align*}
-    & \M = (\\
-    & \quad \Mfield{fields} \subset
-         AbstractObjects \times InstanceFields
-           \times \powerset{AbstractObjects}, \\
-    & \quad \Mfield{statics} \subset
-         StaticFields \times \powerset{AbstractObjects}, \\
-    & \quad \Mfield{shared} \subset AbstractObjects, \\
-    & \quad \Mfield{escaped} \subset AbstractObjects\\
+  \pause
+
+  \begin{align*}
+    & \Ms = (\\
+    & \quad \Mf{fields} \subseteq
+         AbsObjects \times Fields \times \powerset{AbsObjects}, \\
+    & \quad \Mf{shared} \subseteq AbsObjects \\
     & )
-  \end{align*}}
+  \end{align*}
 
 \end{frame}
 
 \begin{frame}{Пример потоковых функций}
 
-  \[ x \gets \op{getstatic}(\M, \sfield{T}{f}) \Rightarrow \]
-  \[
-    \pts{x} = \M.\Mfield{shared} \cup \M.\Mfield{statics}(\sfield{T}{f}).
-  \]
+    \begin{gather*}
+      \M' \gets \op{escape}(\M, a) \colon \\
+      \begin{aligned}
+        &\Ms'.\Mf{fields} = \Ms.\Mf{fields}, \\
+        &\Ms'.\Mf{shared} = \Ms.\Mf{shared} \cup \mathbf{A}^+_{\Ms}(\pts{a}).
+      \end{aligned}
+    \end{gather*}
 
-  \[ x \gets \op{getfield}(\M, a, \field{f}) \Rightarrow \]
-  \[
-    \pts{x} = \left( \bigcup_{O \in \pts{a}} \M.\Mfield{fields}(O,
+  \begin{gather*}
+    x \gets \op{getfield}[\field{f}](\M, a) \colon \\
+    \pts{x} = \left( \bigcup_{\AO \in \pts{a}} \Ms.\Mf{fields}(\AO,
     \field{f}) \right) \cup
     \begin{cases}
-      \M.\Mfield{shared}, & \text{если } \pts{a} \cap
-        \M.\Mfield{shared} \ne \emptyset; \\
+      \Ms.\Mf{shared}, & \text{если } \pts{a} \cap
+        \Ms.\Mf{shared} \ne \emptyset; \\
       \emptyset, & \text{иначе}.
     \end{cases}
-  \]
+  \end{gather*}
 
 \end{frame}
 
 \begin{frame}{Результаты анализа}
 
-  Выражения ссылочного типа могут являться синонимами тогда и только
-  тогда, когда их множества целей, вычисленные потоковым анализом, имеют
+  Выражения ссылочного типа могут быть синонимами тогда и только тогда, когда
+  их множества целей, вычисленные с помощью анализа потока данных, имеют
   непустое пересечение.
 
+\end{frame}
+
+\begin{frame}{Оптимизация удаления избыточных чтений}
+  \begin{center}
+    \begin{minipage}[t]{0.45\textwidth}
+      \begin{block}{Избыточное чтение поля}
+        \begin{algorithmic}
+          \State $a.\field{f} \gets 42$
+          \State $b.\field{f} \gets 37$
+          \State $x \gets \sout<2->{a.\field{f}}
+                          \only<2->{\sout<3->{\ 42}}
+                          \only<3->{\ ???}$
+        \end{algorithmic}
+      \end{block}
+    \end{minipage}
+
+    \bigskip
+
+    \visible<2->{Если $a$ и $b$ не могут быть синонимами.}
+
+    \visible<3->{А если $a$ указывает на разделяемую память?}
+  \end{center}
 \end{frame}
 
 \begin{frame}{Модель памяти языка Java}
@@ -466,37 +500,33 @@
 \begin{frame}{Практические результаты}
 
   \begin{itemize}
-    \item<1-> Алгоритм анализа реализован в статическом компиляторе \java
-              байткода в рамках проекта \eng{Excelsior Research Virtual
-              Machine}.
-    \item<1-> Реализованы следующие оптимизации:
-          \begin{itemize}
-            \item<2-> удаление избыточных чтений полей
-            \item<3-> взрыв объектов и аллокация объектов на стеке
-          \end{itemize}
+    \item Алгоритм анализа реализован в статическом компиляторе \java байткода
+          в рамках проекта \eng{Excelsior Research Virtual Machine}.
+    \item Реализована оптимизация удаления избыточных чтений полей объектов,
+          статических полей и элементов массивов.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Практические результаты}
+
+  \begin{itemize}
+    \item Замерены результаты оптимизации при использовании консервативного
+          алгоритма анализа указателей (\eng{C}) и разработанного алгоритма
+          (\eng{D}).
   \end{itemize}
 
-  \begin{columns}[t]
-    \begin{column}{0.5\textwidth}
-      \visible<2->{\begin{block}{Избыточные чтения}
-        \begin{algorithmic}[1]
-          \State $x.\field{f} \gets 42$
-          \State $y.\field{f} \gets 37$
-          \State $u \gets \sout<2->{x.\field{f}}
-                          \only<2->{\ 42}$
-        \end{algorithmic}
-      \end{block}}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \visible<3->{\begin{block}{Взрыв объектов}
-        \begin{algorithmic}[1]
-          \State $\sout<3->{r \gets \op{new}~\type{Rect}(a, b)}$
-          \State $u \gets \sout<3->{r.\op{area}()}
-                        \ \only<3->{a \cdot b}$
-        \end{algorithmic}
-      \end{block}}
-    \end{column}
-  \end{columns}
+  \begin{table}
+    \begin{tabular}{|l|c|c|c|c|}\hline
+      {\small Количество удаленных чтений} \ldots & C & D & Прирост \\ \hline
+      \ldots полей объектов
+      & \num{5366} & \num{7546} & $+41\%$ \\ \hline
+      \ldots статических полей
+      & \num{472}  & \num{472}  & $0\%$ \\ \hline
+      \ldots элементов массивов
+      & \num{315}  & \num{659}  & $+109\%$ \\ \hline
+    \end{tabular}
+    \caption{Результаты для набора \eng{SPECjvm2008}}
+  \end{table}
 
 \end{frame}
 
@@ -504,13 +534,15 @@
 
   Сделано следующее:
   \begin{itemize}
-    \item изучены существующие алгоритмы анализа указателей и синонимов
+    \item изучены существующие алгоритмы анализа указателей;
     \item разработана схема выражения неявных зависимостей по памяти с помощью
-          \M"=переменной
-    \item разработан алгоритм, проводящий нечувствительный к потоку анализ над
-          множеством операций, работающих с \M"=переменной
-    \item реализован алгоритм в рамках проекта \eng{Excelsior
-          Research Virtual Machine}
+          \M"=переменной;
+    \item разработан алгоритм, проводящий нечувствительный к потоку анализ на
+          графе зависимостей по данным;
+    \item разработана оптимизация удаления избыточных чтений, учитывающая
+          особенности модели памяти языка \java;
+    \item реализованы алгоритм анализа и алгоритм оптимизации в рамках проекта
+          \eng{Excelsior Research Virtual Machine}.
   \end{itemize}
 
   Получен диплом 1 степени на 51-ой международной научной студенческой
@@ -522,8 +554,8 @@
 
   Планируется сделать следующее:
   \begin{itemize}
-    \item внедрить в промышленный компилятор \eng{Excelsior JET}
-    \item адаптировать для межпроцедурного анализа
+    \item внедрить в промышленный компилятор \eng{Excelsior JET},
+    \item адаптировать для межпроцедурного анализа.
   \end{itemize}
 
 \end{frame}
@@ -543,28 +575,28 @@
   \begin{block}{Внутреннее представление}
     \begin{algorithmic}
       \State $\M_0 \gets \op{initialmemory}$
-        \visible<3->{\Comment{$\M_0 = \{\Mfield{fields}\colon}
-          \{ O_1.\field{f} \colon \emptyset \}\}$}
-      \State $a \gets \op{new}(\type{A})$
-        \visible<2->{\Comment{$\pts{a} = \{O_1\}$}}
+        \visible<3->{\Comment{$\M_0 = \{\Mf{fields}\colon}
+          \{ \AO_1.\field{f} \colon \emptyset \}\}$}
+      \State $a \gets \op{new}[\type{A}]$
+        \visible<2->{\Comment{$\pts{a} = \{\AO_1\}$}}
       \State
-        \State $x_1 \gets \op{new}(\type{A})$
-          \visible<2->{\Comment{$\pts{x_1} = \{O_2\}$}}
-        \State $\M_1 \gets \op{putfield}(\M_0, a, \field{f}, x_1)$
-          \visible<3->{\Comment{$\M_1 = \{\Mfield{fields}\colon}
-            \{ O_1.\field{f} \colon \{ O_2 \} \}\}$}
+        \State $x_1 \gets \op{new}[\type{A}]$
+          \visible<2->{\Comment{$\pts{x_1} = \{\AO_2\}$}}
+        \State $\M_1 \gets \op{putfield}[\field{f}](\M_0, a, x_1)$
+          \visible<3->{\Comment{$\M_1 = \{\Mf{fields}\colon}
+            \{ \AO_1.\field{f} \colon \{ \AO_2 \} \}\}$}
       \State
-        \State $x_2 \gets \op{arg}(1)$
-          \visible<2->{\Comment{$\pts{x_2} = \{O_{global}\}$}}
-        \State $\M_2 \gets \op{putfield}(\M_0, a, \field{f}, x_2)$
-          \visible<3->{\Comment{$\M_2 = \{\Mfield{fields}\colon}
-            \{ O_1.\field{f} \colon \{ O_{global} \} \}\}$}
+        \State $x_2 \gets \op{shared}(\M_0)$
+          \visible<2->{\Comment{$\pts{x_2} = \{\AOGlobal\}$}}
+        \State $\M_2 \gets \op{putfield}[\field{f}](\M_0, a, x_2)$
+          \visible<3->{\Comment{$\M_2 = \{\Mf{fields}\colon}
+            \{ \AO_1.\field{f} \colon \{ \AOGlobal \} \}\}$}
       \State
       \State $\M_3 \gets \op{phi}(\M_1, \M_2)$
-        \visible<3->{\Comment{$\M_3 = \{\Mfield{fields}\colon}
-          \{ O_1.\field{f} \colon \{ O_2, O_{global} \} \}\}$}
-      \State $y \gets \op{getfield}(\M_3, a, \field{f})$
-        \visible<4->{\Comment{$\pts{y} = \{ O_2, O_{global} \}$}}
+        \visible<3->{\Comment{$\M_3 = \{\Mf{fields}\colon}
+          \{ \AO_1.\field{f} \colon \{ \AO_2, \AOGlobal \} \}\}$}
+      \State $y \gets \op{getfield}[\field{f}](\M_3, a)$
+        \visible<4->{\Comment{$\pts{y} = \{ \AO_2, \AOGlobal \}$}}
     \end{algorithmic}
   \end{block}
 
