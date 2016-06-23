@@ -132,20 +132,17 @@
   Парфиненко Владимир Владимирович \\
   \vspace{0.5cm}
   \small
-    Научные руководители:\\
-    м.\,н.\,с.~ИСИ~СО~РАН, Павлов~Павел~Евгеньевич \\
-    зав.\,лаб.~ИСИ~СО~РАН, к.\,т.\,н.~Шелехов~Владимир~Иванович%
+    Научный руководитель:\\
+    зав.\,лаб.~ИСИ~СО~РАН, к.\,ф.-м.\,н.~Бульонков~Михаил~Алексеевич%
 }
 \renewcommand\inserttitle{%
-  Применение анализа указателей и синонимов
-  для оптимизации многопоточных программ%
+  Анализ указателей и синонимов
+  для многопоточных программ%
 }
 \institute{%
-  Новосибирский национальный исследовательский\\
-  государственный университет%
+  ИСИ~СО~РАН
 }
 \date{
-  Новосибирск, 2013\ifdraft{ \\\medskip \footnotesize Git date: \GitDate.}{}
 }
 
 \begin{document}
@@ -167,25 +164,7 @@
 
 \end{frame}
 
-\begin{frame}{Цель и задачи}
-
-  \begin{block}{Цель}
-    Разработать алгоритм анализа указателей для языка \java.
-  \end{block}
-
-  \begin{block}{Основные задачи}
-    \begin{itemize}
-      \item Изучить существующие алгоритмы и разработать новый, выбрав
-            подходящий за основу.
-      \item Разработать схему выражения неявных зависимостей по памяти.
-      \item Провести замеры эффективности оптимизации, использующей
-            результаты анализа.
-    \end{itemize}
-  \end{block}
-
-\end{frame}
-
-\begin{frame}{Недостатки предыдущей работы}
+\begin{frame}{Недостатки предыдущих работ}
 
   \begin{center}
     \begin{minipage}[t]{0.35\textwidth}
@@ -410,21 +389,16 @@
     & \Ms = (\\
     & \quad \Mf{fields} \subseteq
          AbsObjects \times Fields \times \powerset{AbsObjects}, \\
+    & \quad \Mf{statics} \subseteq
+         Fields \times \powerset{AbsObjects}, \\
     & \quad \Mf{shared} \subseteq AbsObjects \\
+    & \quad \Mf{escaped} \subseteq AbsObjects \\
     & )
   \end{align*}
 
 \end{frame}
 
 \begin{frame}{Пример потоковых функций}
-
-    \begin{gather*}
-      \M' \gets \op{escape}(\M, a) \colon \\
-      \begin{aligned}
-        &\Ms'.\Mf{fields} = \Ms.\Mf{fields}, \\
-        &\Ms'.\Mf{shared} = \Ms.\Mf{shared} \cup \mathbf{A}^+_{\Ms}(\pts{a}).
-      \end{aligned}
-    \end{gather*}
 
   \begin{gather*}
     x \gets \op{getfield}[\field{f}](\M, a) \colon \\
@@ -437,137 +411,6 @@
     \end{cases}
   \end{gather*}
 
-\end{frame}
-
-\begin{frame}{Результаты анализа}
-
-  Выражения ссылочного типа могут быть синонимами тогда и только тогда, когда
-  их множества целей, вычисленные с помощью анализа потока данных, имеют
-  непустое пересечение.
-
-\end{frame}
-
-\begin{frame}{Оптимизация удаления избыточных чтений}
-  \begin{center}
-    \begin{minipage}[t]{0.45\textwidth}
-      \begin{block}{Избыточное чтение поля}
-        \begin{algorithmic}
-          \State $a.\field{f} \gets 42$
-          \State $b.\field{f} \gets 37$
-          \State $x \gets \sout<2->{a.\field{f}}
-                          \only<2->{\sout<3->{\ 42}}
-                          \only<3->{\ ???}$
-        \end{algorithmic}
-      \end{block}
-    \end{minipage}
-
-    \bigskip
-
-    \visible<2->{Если $a$ и $b$ не могут быть синонимами.}
-
-    \visible<3->{А если $a$ указывает на разделяемую память?}
-  \end{center}
-\end{frame}
-
-\begin{frame}{Модель памяти языка Java}
-  \begin{columns}[t]
-    \begin{column}{.5\textwidth}
-      \begin{block}{Чтение из \eng{volatile} поля}
-        \begin{algorithmic}
-          \State $a.\field{x} \gets 42$
-          \State $\ldots$
-          \State $t \gets b.\field{volatileField}$
-          \State $\ldots$
-          \State $x \gets a.\field{x}$
-        \end{algorithmic}
-      \end{block}
-    \end{column}
-    \begin{column}{.5\textwidth}
-      \begin{block}{Чтение из обычного поля}
-        \begin{algorithmic}
-          \State $a.\field{x} \gets 42$
-          \State $\ldots$
-          \State $t \gets b.\field{normalField}$
-          \State $\ldots$
-          \State $x \gets \sout<2->{a.\field{x}}
-                          \only<2->{\ 42}$
-        \end{algorithmic}
-      \end{block}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Практические результаты}
-
-  \begin{itemize}
-    \item Алгоритм анализа реализован в статическом компиляторе \java байткода
-          в рамках проекта \eng{Excelsior Research Virtual Machine}.
-    \item Реализована оптимизация удаления избыточных чтений полей объектов,
-          статических полей и элементов массивов.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Практические результаты}
-
-  \begin{itemize}
-    \item Замерены результаты оптимизации при использовании консервативного
-          алгоритма анализа указателей (\eng{C}) и разработанного алгоритма
-          (\eng{D}).
-  \end{itemize}
-
-  \begin{table}
-    \begin{tabular}{|l|c|c|c|c|}\hline
-      {\small Количество удаленных чтений} \ldots & C & D & Прирост \\ \hline
-      \ldots полей объектов
-      & \num{5366} & \num{7546} & $+41\%$ \\ \hline
-      \ldots статических полей
-      & \num{472}  & \num{472}  & $0\%$ \\ \hline
-      \ldots элементов массивов
-      & \num{315}  & \num{659}  & $+109\%$ \\ \hline
-    \end{tabular}
-    \caption{Результаты для набора \eng{SPECjvm2008}}
-  \end{table}
-
-\end{frame}
-
-\begin{frame}{Результаты}
-
-  Сделано следующее:
-  \begin{itemize}
-    \item изучены существующие алгоритмы анализа указателей;
-    \item разработана схема выражения неявных зависимостей по памяти с помощью
-          \M"=переменной;
-    \item разработан алгоритм, проводящий нечувствительный к потоку анализ на
-          графе зависимостей по данным;
-    \item разработана оптимизация удаления избыточных чтений, учитывающая
-          особенности модели памяти языка \java;
-    \item реализованы алгоритм анализа и алгоритм оптимизации в рамках проекта
-          \eng{Excelsior Research Virtual Machine}.
-  \end{itemize}
-
-  Получен диплом 1 степени на 51-ой международной научной студенческой
-  конференции <<Студент и научно-технический прогресс>>.
-
-\end{frame}
-
-\begin{frame}{Дальнейшая работа}
-
-  Планируется сделать следующее:
-  \begin{itemize}
-    \item внедрить в промышленный компилятор \eng{Excelsior JET},
-    \item адаптировать для межпроцедурного анализа.
-  \end{itemize}
-
-\end{frame}
-
-\begin{frame}{Конец}
-  \centerline{\huge Спасибо за внимание!}
-\end{frame}
-
-\begin{backup}
-
-\begin{frame}{Запасные слайды}
-  \centerline{\ldots}
 \end{frame}
 
 \begin{frame}{Представление потоковых свойств}
@@ -599,6 +442,14 @@
         \visible<4->{\Comment{$\pts{y} = \{ \AO_2, \AOGlobal \}$}}
     \end{algorithmic}
   \end{block}
+
+\end{frame}
+
+\begin{frame}{Результаты анализа}
+
+  Выражения ссылочного типа могут быть синонимами тогда и только тогда, когда
+  их множества целей, вычисленные с помощью анализа потока данных, имеют
+  непустое пересечение.
 
 \end{frame}
 
@@ -676,35 +527,6 @@
 
 \end{frame}
 
-\begin{frame}{Некорректно синхронизованные программы}
-
-  $\sfield{Shared}{data}$, $\sfield{Shared}{ready}$~--- обычные статические
-  поля.
-
-  \begin{columns}[t]
-    \begin{column}{.5\textwidth}
-      \begin{block}{Поток 1 <<Производитель>>}
-        \begin{algorithmic}[1]
-          \State $\sfield{Shared}{data} \gets \op{calc}(\ldots)$
-          \State $\sfield{Shared}{ready} \gets \op{true}$
-        \end{algorithmic}
-      \end{block}
-    \end{column}
-    \begin{column}{.5\textwidth}
-      \begin{block}{Поток 2 <<Потребитель>>}
-        \begin{algorithmic}[1]
-          \State $\alt<1>{\vphantom{A}\ldots}{result \gets \sfield{Shared}{data}}$
-          \While{$(!\sfield{Shared}{ready})$}
-            \State \ldots
-          \EndWhile
-          \State $\sout<2->{result \gets \sfield{Shared}{data}}$
-        \end{algorithmic}
-      \end{block}
-    \end{column}
-  \end{columns}
-
-\end{frame}
-
 \begin{frame}{Внутреннее представление сложных операций}
 
   \begin{columns}[t]
@@ -734,6 +556,146 @@
     \end{column}
   \end{columns}
 
+\end{frame}
+
+\begin{frame}{Использование JMM для уточнения анализа}
+
+  \begin{block}{Внутреннее представление}
+    \begin{algorithmic}
+      \State
+        \Comment{$\pts{a} = \{\AO_1\}, \pts{b} = \{\AO_2\}$}
+      \State $x_0 \gets \op{new}[\type{A}]$
+        \visible<1->{\Comment{$\pts{x_0} = \{\AO_3\}$}}
+      \State $\M_1 \gets \op{putfield}[\field{f}](\M_0, a, x_0)$
+      \State $y_0 \gets \op{new}[\type{A}]$
+        \visible<1->{\Comment{$\pts{y_0} = \{\AO_4\}$}}
+      \State $\M_2 \gets \op{putfield}[\field{g}](\M_1, b, x_1)$
+      \State
+        \visible<1->{\Comment{$\M_2 = \{\Mf{fields}\colon}
+          \{ \AO_1.\field{f} \colon \{ \AO_3 \},
+             \AO_2.\field{g} \colon \{ \AO_4 \} \}\}$}
+
+      \pause
+
+      \State
+      \State $\M_3 \gets \op{escape}(\M_2, a, b)$
+        \visible<1->{\Comment{$\M_3 = \{\Mf{escaped}\colon}
+          \{ \AO_1, \AO_2 \}\}$}
+      \State $x_1 \gets \op{getfield}[\field{f}](\M_3, a)$
+        \visible<1->{\Comment{$\pts{x_1} = \{\AO_3\}$}}
+      \State $y_1 \gets \op{getfield}[\field{g}](\M_3, b)$
+        \visible<1->{\Comment{$\pts{y_1} = \{\AO_4\}$}}
+
+      \pause
+
+      \State
+      \State $\M_4 \gets \op{reload}(\M_3)$
+        \visible<1->{\Comment{$\M_3 = \{\Mf{shared}\colon}
+          \{ \AO_1, \AO_2 \}\}$}
+      \State $x_2 \gets \op{getfield}[\field{f}](\M_4, a)$
+        \visible<1->{\Comment{$\pts{x_2} = \{\AO_3, \AO_4, \AOGlobal \}$}}
+      \State $y_2 \gets \op{getfield}[\field{g}](\M_4, b)$
+        \visible<1->{\Comment{$\pts{y_2} = \{\AO_3, \AO_4, \AOGlobal \}$}}
+
+    \end{algorithmic}
+  \end{block}
+
+\end{frame}
+
+\begin{frame}{Анализ типов}
+
+  Анализ указателей был интегрирован с межпроцедурным анализом типов для
+  взаимного усиления.
+
+\end{frame}
+
+\begin{frame}{Конец}
+  \centerline{\huge Спасибо за внимание!}
+\end{frame}
+
+\begin{backup}
+
+\begin{frame}{Запасные слайды}
+  \centerline{\ldots}
+\end{frame}
+
+\begin{frame}{Оптимизация удаления избыточных чтений}
+  \begin{center}
+    \begin{minipage}[t]{0.45\textwidth}
+      \begin{block}{Избыточное чтение поля}
+        \begin{algorithmic}
+          \State $a.\field{f} \gets 42$
+          \State $b.\field{f} \gets 37$
+          \State $x \gets \sout<2->{a.\field{f}}
+                          \only<2->{\sout<3->{\ 42}}
+                          \only<3->{\ ???}$
+        \end{algorithmic}
+      \end{block}
+    \end{minipage}
+
+    \bigskip
+
+    \visible<2->{Если $a$ и $b$ не могут быть синонимами.}
+
+    \visible<3->{А если $a$ указывает на разделяемую память?}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Некорректно синхронизованные программы}
+
+  $\sfield{Shared}{data}$, $\sfield{Shared}{ready}$~--- обычные статические
+  поля.
+
+  \begin{columns}[t]
+    \begin{column}{.5\textwidth}
+      \begin{block}{Поток 1 <<Производитель>>}
+        \begin{algorithmic}[1]
+          \State $\sfield{Shared}{data} \gets \op{calc}(\ldots)$
+          \State $\sfield{Shared}{ready} \gets \op{true}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+    \begin{column}{.5\textwidth}
+      \begin{block}{Поток 2 <<Потребитель>>}
+        \begin{algorithmic}[1]
+          \State $\alt<1>{\vphantom{A}\ldots}{result \gets \sfield{Shared}{data}}$
+          \While{$(!\sfield{Shared}{ready})$}
+            \State \ldots
+          \EndWhile
+          \State $\sout<2->{result \gets \sfield{Shared}{data}}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+\begin{frame}{Модель памяти языка Java}
+  \begin{columns}[t]
+    \begin{column}{.5\textwidth}
+      \begin{block}{Чтение из \eng{volatile} поля}
+        \begin{algorithmic}
+          \State $a.\field{x} \gets 42$
+          \State $\ldots$
+          \State $t \gets b.\field{volatileField}$
+          \State $\ldots$
+          \State $x \gets a.\field{x}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+    \begin{column}{.5\textwidth}
+      \begin{block}{Чтение из обычного поля}
+        \begin{algorithmic}
+          \State $a.\field{x} \gets 42$
+          \State $\ldots$
+          \State $t \gets b.\field{normalField}$
+          \State $\ldots$
+          \State $x \gets \sout<2->{a.\field{x}}
+                          \only<2->{\ 42}$
+        \end{algorithmic}
+      \end{block}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \end{backup}
